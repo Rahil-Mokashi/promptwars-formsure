@@ -1,0 +1,109 @@
+{
+  "id": "mahadbt-postmatric-obc",
+  "name": "Post-Matric Scholarship for OBC students",
+  "portal": "MahaDBT · VJNT, OBC & SBC Welfare",
+  "slots": [
+    { "id": "aadhaar", "short": "Aadhaar", "label": { "en": "Aadhaar card", "mr": "आधार कार्ड", "hi": "आधार कार्ड" }, "accepts": ["aadhaar"] },
+    { "id": "caste_certificate", "short": "Caste certificate", "label": { "en": "OBC caste certificate", "mr": "जात प्रमाणपत्र", "hi": "जाति प्रमाणपत्र" }, "accepts": ["caste_certificate"] },
+    { "id": "income_certificate", "short": "Income certificate", "label": { "en": "Income certificate + non-creamy layer (one PDF)", "mr": "उत्पन्न व नॉन-क्रिमीलेयर प्रमाणपत्र", "hi": "आय व नॉन-क्रीमी लेयर प्रमाणपत्र" }, "accepts": ["income_certificate", "non_creamy_layer"] },
+    { "id": "domicile", "short": "Domicile certificate", "label": { "en": "Domicile certificate", "mr": "अधिवास प्रमाणपत्र", "hi": "अधिवास प्रमाणपत्र" }, "accepts": ["domicile_certificate"] },
+    { "id": "bonafide", "short": "Bonafide", "label": { "en": "College bonafide and fee structure", "mr": "बोनाफाईड व फी रचना", "hi": "बोनाफाइड व फीस संरचना" }, "accepts": ["bonafide_certificate"] },
+    { "id": "marksheet", "short": "Marksheet", "label": { "en": "Previous year marksheet", "mr": "मागील वर्षाची गुणपत्रिका", "hi": "पिछले वर्ष की अंकतालिका" }, "accepts": ["marksheet"] },
+    { "id": "bank_passbook", "short": "Bank passbook", "label": { "en": "Aadhaar-seeded bank passbook", "mr": "आधार संलग्न बँक पासबुक", "hi": "आधार से जुड़ी बैंक पासबुक" }, "accepts": ["bank_passbook"] }
+  ],
+  "rules": [
+    {
+      "id": "required-documents", "type": "required_document",
+      "label": "Required documents present", "severity": "critical",
+      "issueTitle": "A required document is missing", "issueDoc": "Document upload",
+      "slots": ["aadhaar", "caste_certificate", "income_certificate", "domicile", "bonafide", "marksheet", "bank_passbook"],
+      "why": { "en": "MahaDBT needs all seven documents before the application can be verified.", "mr": "अर्ज पडताळण्यासाठी MahaDBT ला सातही कागदपत्रे आवश्यक आहेत.", "hi": "आवेदन के सत्यापन के लिए MahaDBT को सातों दस्तावेज़ चाहिए।" },
+      "fix": { "en": "Upload the missing document in its slot before you submit.", "mr": "सबमिट करण्यापूर्वी राहिलेले कागदपत्र त्याच्या जागी अपलोड करा.", "hi": "जमा करने से पहले छूटा हुआ दस्तावेज़ उसकी जगह अपलोड करें।" },
+      "source": { "label": "Maharashtra Post-Matric OBC guide", "url": "https://www.indiascholarships.in/hi/scholarships/maharashtra-postmatric-obc", "kind": "guide" },
+      "verified": true, "usesAi": false
+    },
+    {
+      "id": "right-document", "type": "document_check",
+      "label": "Right document in each slot", "severity": "critical",
+      "issueTitle": "A file is in the wrong slot", "issueDoc": "Document upload",
+      "why": { "en": "A file of the wrong kind in a slot is rejected at verification.", "mr": "चुकीच्या जागी अपलोड केलेली फाइल पडताळणीत नाकारली जाते.", "hi": "गलत जगह अपलोड की गई फ़ाइल सत्यापन में अस्वीकार हो जाती है।" },
+      "fix": { "en": "Upload the correct, legible document in this slot.", "mr": "या जागी योग्य आणि वाचता येणारे कागदपत्र अपलोड करा.", "hi": "इस जगह सही और पढ़ने योग्य दस्तावेज़ अपलोड करें।" },
+      "source": { "label": "Maharashtra Post-Matric OBC guide", "url": "https://www.indiascholarships.in/hi/scholarships/maharashtra-postmatric-obc", "kind": "guide" },
+      "verified": true, "usesAi": true
+    },
+    {
+      "id": "income-financial-year", "type": "date_window",
+      "label": "Income certificate from this financial year", "severity": "critical",
+      "issueTitle": "Income certificate is from last financial year", "issueDoc": "Income certificate",
+      "slot": "income_certificate", "field": "issueDate", "window": "indian_fy",
+      "why": { "en": "MahaDBT rejects income certificates issued in an earlier financial year.", "mr": "मागील आर्थिक वर्षात दिलेली उत्पन्न प्रमाणपत्रे MahaDBT नाकारते.", "hi": "पिछले वित्त वर्ष में जारी आय प्रमाणपत्र MahaDBT अस्वीकार करता है।" },
+      "fix": {
+        "en": "Get a new income certificate from the Tehsildar office, issued on or after 1 April {year}.",
+        "mr": "तहसील कार्यालयातून १ एप्रिल {year} रोजी किंवा त्यानंतर दिलेले नवीन उत्पन्न प्रमाणपत्र मिळवा.",
+        "hi": "तहसील कार्यालय से 1 अप्रैल {year} को या उसके बाद जारी नया आय प्रमाणपत्र लें।"
+      },
+      "source": { "label": "MahaDBT 2.0 guide", "url": "https://anantamias.com/mahadbt/", "kind": "guide" },
+      "verified": true, "usesAi": false
+    },
+    {
+      "id": "income-ncl", "type": "conditional",
+      "label": "Income + non-creamy layer in one PDF", "severity": "critical",
+      "issueTitle": "Non-creamy layer certificate is missing from the PDF", "issueDoc": "Income certificate + non-creamy layer",
+      "when": { "formField": "category", "in": ["OBC", "SBC", "VJNT"] },
+      "slot": "income_certificate", "mustContain": ["income_certificate", "non_creamy_layer"],
+      "needed": "Income and non-creamy layer certificates merged in one PDF",
+      "why": { "en": "OBC, SBC and VJNT applicants upload both certificates together in the income certificate slot.", "mr": "OBC, SBC व VJNT अर्जदार दोन्ही प्रमाणपत्रे उत्पन्न प्रमाणपत्राच्या जागी एकत्र अपलोड करतात.", "hi": "OBC, SBC और VJNT आवेदक दोनों प्रमाणपत्र आय प्रमाणपत्र वाली जगह एक साथ अपलोड करते हैं।" },
+      "fix": {
+        "en": "Merge your income certificate and non-creamy layer certificate into one PDF, then upload it in the income certificate slot.",
+        "mr": "उत्पन्न प्रमाणपत्र आणि नॉन-क्रिमीलेयर प्रमाणपत्र एकाच PDF मध्ये जोडा आणि उत्पन्न प्रमाणपत्राच्या जागी अपलोड करा.",
+        "hi": "आय प्रमाणपत्र और नॉन-क्रीमी लेयर प्रमाणपत्र को एक ही PDF में जोड़ें और आय प्रमाणपत्र वाली जगह अपलोड करें।"
+      },
+      "source": { "label": "College scholarship notice", "url": "https://vazecollege.net/wp-content/uploads/2026/02/Notice-for-Reserve-Caste-Cetogary-Students-SFC-for-2025-26.pdf", "kind": "college_notice" },
+      "verified": true, "usesAi": true
+    },
+    {
+      "id": "name-match", "type": "cross_document_match",
+      "label": "Name matches across documents", "severity": "critical",
+      "issueTitle": "Your name is spelled differently on two documents", "issueDoc": "Income certificate · Marksheet",
+      "formField": "fullName", "slots": ["aadhaar", "income_certificate", "marksheet"],
+      "why": { "en": "Name spelling and order must match across the form and every document.", "mr": "अर्जातील आणि प्रत्येक कागदपत्रातील नावाचे स्पेलिंग व क्रम जुळणे आवश्यक आहे.", "hi": "फ़ॉर्म और हर दस्तावेज़ में नाम की वर्तनी और क्रम एक जैसे होने चाहिए।" },
+      "fix": {
+        "en": "Check which spelling matches your Aadhaar, then get the other document corrected before you submit. Ask your college scholarship desk how.",
+        "mr": "तुमच्या आधारवरील स्पेलिंग तपासा आणि सबमिट करण्यापूर्वी दुसरे कागदपत्र दुरुस्त करून घ्या. कसे करायचे ते महाविद्यालयाच्या शिष्यवृत्ती विभागाला विचारा.",
+        "hi": "आधार पर लिखी स्पेलिंग जांचें और जमा करने से पहले दूसरा दस्तावेज़ ठीक करवाएं। तरीका कॉलेज के छात्रवृत्ति विभाग से पूछें।"
+      },
+      "source": { "label": "MahaDBT verification steps, CareerIndia", "url": "https://www.careerindia.com/news/mahadbt-1-0-portal-closing-today-urgent-scholarship-verification-steps-2026-011-65787.html", "kind": "news" },
+      "verified": true, "usesAi": true
+    },
+    {
+      "id": "dob-match", "type": "field_consistency",
+      "label": "Date of birth matches Aadhaar", "severity": "critical",
+      "issueTitle": "Date of birth differs from your Aadhaar", "issueDoc": "Aadhaar",
+      "formField": "dateOfBirth", "slot": "aadhaar", "docField": "dateOfBirth", "format": "date",
+      "why": { "en": "The date of birth on the form must match your Aadhaar.", "mr": "अर्जातील जन्मतारीख आधारशी जुळणे आवश्यक आहे.", "hi": "फ़ॉर्म की जन्मतिथि आधार से मेल खानी चाहिए।" },
+      "fix": { "en": "Correct the date of birth on the form, or get your Aadhaar updated.", "mr": "अर्जातील जन्मतारीख दुरुस्त करा किंवा आधार अद्ययावत करून घ्या.", "hi": "फ़ॉर्म की जन्मतिथि सुधारें या आधार अपडेट करवाएं।" },
+      "source": { "label": "MahaDBT verification steps, CareerIndia", "url": "https://www.careerindia.com/news/mahadbt-1-0-portal-closing-today-urgent-scholarship-verification-steps-2026-011-65787.html", "kind": "news" },
+      "verified": true, "usesAi": false
+    },
+    {
+      "id": "category-match", "type": "field_consistency",
+      "label": "Category matches caste certificate", "severity": "critical",
+      "issueTitle": "Category differs from your caste certificate", "issueDoc": "Caste certificate",
+      "formField": "category", "slot": "caste_certificate", "docField": "category", "format": "text",
+      "why": { "en": "The category chosen on the form must match your caste certificate.", "mr": "अर्जात निवडलेला प्रवर्ग जात प्रमाणपत्राशी जुळणे आवश्यक आहे.", "hi": "फ़ॉर्म में चुनी श्रेणी जाति प्रमाणपत्र से मेल खानी चाहिए।" },
+      "fix": { "en": "Select the category shown on your caste certificate.", "mr": "जात प्रमाणपत्रावरील प्रवर्ग निवडा.", "hi": "जाति प्रमाणपत्र पर दी गई श्रेणी चुनें।" },
+      "source": { "label": "Maharashtra Post-Matric OBC guide", "url": "https://www.indiascholarships.in/hi/scholarships/maharashtra-postmatric-obc", "kind": "guide" },
+      "verified": true, "usesAi": false
+    },
+    {
+      "id": "income-limit", "type": "numeric_max",
+      "label": "Family income within scheme limit", "severity": "critical",
+      "issueTitle": "Family income is above the scheme limit", "issueDoc": "Income certificate",
+      "slot": "income_certificate", "docField": "annualIncome", "max": 800000,
+      "why": { "en": "Applicants above the family income limit are not eligible.", "mr": "कौटुंबिक उत्पन्न मर्यादेपेक्षा जास्त असल्यास अर्जदार पात्र नसतो.", "hi": "पारिवारिक आय सीमा से अधिक होने पर आवेदक पात्र नहीं होता।" },
+      "fix": { "en": "Check the current income limit on the official MahaDBT scheme page.", "mr": "अधिकृत MahaDBT योजना पानावर सध्याची उत्पन्न मर्यादा तपासा.", "hi": "आधिकारिक MahaDBT योजना पृष्ठ पर वर्तमान आय सीमा जांचें।" },
+      "source": { "label": "MahaDBT 2.0 guide", "url": "https://anantamias.com/mahadbt/", "kind": "guide" },
+      "verified": false, "usesAi": false
+    }
+  ]
+}
