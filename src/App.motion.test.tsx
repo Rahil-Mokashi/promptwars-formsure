@@ -8,7 +8,12 @@ describe('with motion enabled', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: /try sample applicant/i }));
-    expect(await screen.findByText('Which scholarship are you applying for?', {}, { timeout: 3000 })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /post-matric scholarship for obc/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      await screen.findByText('Which scholarship are you applying for?', {}, { timeout: 3000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /post-matric scholarship for obc/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 });

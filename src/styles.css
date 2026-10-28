@@ -1,6 +1,6 @@
 /*
  * FormSure styles: plain CSS, no framework.
- * The design language comes from design/formsure-design.html; animation is done in Framer Motion, not here,
+ * The visual language was ported from an HTML prototype; animation is done in Framer Motion, not here,
  * so `prefers-reduced-motion` only has to switch off the few CSS transitions that remain.
  *
  * Sections: base, header, buttons, cards, landing, scheme picker, forms, live audit, report, ready, responsive,
@@ -22,18 +22,17 @@ a:hover {
    ========================================================================== */
 
 .fs {
-  font-family:
-    "Plus Jakarta Sans", "Noto Sans Devanagari", system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', system-ui, sans-serif;
   color: #0e1525;
   background: #f6f7fb;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 .dev {
-  font-family: "Noto Sans Devanagari", "Plus Jakarta Sans", sans-serif;
+  font-family: 'Noto Sans Devanagari', 'Plus Jakarta Sans', sans-serif;
 }
 .mono {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 .wrap {
   max-width: 1200px;
@@ -688,11 +687,7 @@ input:focus-visible {
   right: 0;
   top: 0;
   height: 80px;
-  background: linear-gradient(
-    180deg,
-    rgba(67, 56, 202, 0),
-    rgba(67, 56, 202, 0.16)
-  );
+  background: linear-gradient(180deg, rgba(67, 56, 202, 0), rgba(67, 56, 202, 0.16));
   border-bottom: 2px solid #4338ca;
   pointer-events: none;
 }
@@ -1186,7 +1181,7 @@ label.btn:focus-within {
   gap: 8px;
 }
 .statstrip li + li::before {
-  content: "";
+  content: '';
   width: 4px;
   height: 4px;
   border-radius: 50%;
@@ -1514,7 +1509,7 @@ label.btn:focus-within {
   font-weight: 600;
   color: #3f4759;
 }
-.slotnote[data-failed="true"] {
+.slotnote[data-failed='true'] {
   color: #9f1239;
 }
 
@@ -1524,7 +1519,7 @@ label.btn:focus-within {
   font-weight: 600;
   color: #9f1239;
 }
-.field input[aria-invalid="true"] {
+.field input[aria-invalid='true'] {
   border-color: #be123c;
 }
 

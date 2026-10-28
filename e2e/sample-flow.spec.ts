@@ -3,13 +3,17 @@ import { expect, test, type Page } from '@playwright/test';
 
 /** Real-browser axe scan, including colour contrast (which jsdom cannot measure). */
 async function expectNoA11yViolations(page: Page): Promise<void> {
-  const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
   expect(violations.map((v) => `${v.id}: ${v.nodes.length} node(s)`)).toEqual([]);
 }
 
 test.use({ reducedMotion: 'reduce' });
 
-test('sample applicant: 50 % with one fix and two advisory warnings, then 100 % after the re-check', async ({ page }) => {
+test('sample applicant: 50 % with one fix and two advisory warnings, then 100 % after the re-check', async ({
+  page,
+}) => {
   await page.goto('/');
   await expectNoA11yViolations(page);
 
@@ -40,6 +44,8 @@ test('sample applicant: 50 % with one fix and two advisory warnings, then 100 % 
 test('no horizontal scrolling at phone width', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
   expect(overflow).toBeLessThanOrEqual(0);
 });

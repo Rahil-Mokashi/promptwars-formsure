@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import type { AuditReport, ReadProgress, SlotDef } from '../core/types';
 
 /** One check is revealed this often, in milliseconds (the design's pace). */
-export const CHECK_REVEAL_MS = 650;
+const CHECK_REVEAL_MS = 650;
 
 /** While documents are being read and nothing is known yet, the scanner moves to the next slot this often. */
-export const SCAN_CYCLE_MS = 900;
+const SCAN_CYCLE_MS = 900;
 
 /** What {@link useAuditReveal} returns. */
 export interface AuditReveal {
@@ -32,11 +32,22 @@ export function useAuditReveal(report: AuditReport | null, reduce: boolean): Aud
 
   useEffect(() => {
     if (!report || reduce || skipped || done) return;
-    const timer = setInterval(() => setTick((n) => n + 1), CHECK_REVEAL_MS);
-    return () => clearInterval(timer);
+    const timer = setInterval(() => {
+      setTick((n) => n + 1);
+    }, CHECK_REVEAL_MS);
+    return () => {
+      clearInterval(timer);
+    };
   }, [report, reduce, skipped, done]);
 
-  return { step, total, done, skip: () => setSkipped(true) };
+  return {
+    step,
+    total,
+    done,
+    skip: () => {
+      setSkipped(true);
+    },
+  };
 }
 
 /** Inputs of {@link useScanIndex}. */
@@ -56,11 +67,18 @@ export function useScanIndex({ slots, report, progress, reveal, reduce }: ScanIn
   const [cycle, setCycle] = useState(0);
   useEffect(() => {
     if (report || reduce || progress) return;
-    const timer = setInterval(() => setCycle((n) => n + 1), SCAN_CYCLE_MS);
-    return () => clearInterval(timer);
+    const timer = setInterval(() => {
+      setCycle((n) => n + 1);
+    }, SCAN_CYCLE_MS);
+    return () => {
+      clearInterval(timer);
+    };
   }, [report, reduce, progress]);
 
-  const incomeIndex = Math.max(0, slots.findIndex((s) => s.id === 'income_certificate'));
+  const incomeIndex = Math.max(
+    0,
+    slots.findIndex((s) => s.id === 'income_certificate'),
+  );
   const reading = progress ? slots.findIndex((s) => s.id === progress.slotId) : -1;
   if (reading >= 0 && !report) return reading;
   if (reveal.done || reduce) return incomeIndex;

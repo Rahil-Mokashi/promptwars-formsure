@@ -1,17 +1,15 @@
 import { m } from 'framer-motion';
-import { maskAadhaar } from '../../core/mask';
 import { slotNames } from '../../core/slotNames';
 import type { Lang, SlotDef, SlotReadState } from '../../core/types';
 import { useReduce } from '../../hooks/useMotion';
-import { FileIcon, Tick } from '../icons';
+import { FileIcon } from '../icons';
 import { fadeUp } from '../motionProps';
+import { shownFile, type ShownFile } from './slotFile';
+import { SlotStatus } from './SlotStatus';
 
-const BYTES_PER_KB = 1024;
 const STAGGER_DELAY_S = 0.12;
 const STAGGER_STEP_S = 0.06;
-
-const sizeLabel = (bytes: number): string =>
-  bytes >= BYTES_PER_KB * BYTES_PER_KB ? `${(bytes / BYTES_PER_KB / BYTES_PER_KB).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / BYTES_PER_KB))} KB`;
+const ACCEPT = 'image/png,image/jpeg,image/webp,application/pdf';
 
 /** Props of {@link SlotCard}. */
 export interface SlotCardProps {
@@ -21,50 +19,56 @@ export interface SlotCardProps {
   /** The chosen file (live mode). */
   file: File | undefined;
   /** The sample's file info (sample mode); when set the card is read-only. */
-  sampleFile: { name: string; size: string } | undefined;
+  sampleFile: ShownFile | undefined;
   state: SlotReadState | undefined;
   retrying: boolean;
   onFile: (file: File | undefined) => void;
   onRetry: () => void;
 }
 
-/** One document slot: its name, the file chosen, reading state, and the keyboard-operable file input. */
+/** The keyboard-operable file input, shown as a button. */
+function FilePicker({ slot, hasFile, onFile }: { slot: SlotDef; hasFile: boolean; onFile: SlotCardProps['onFile'] }) {
+  return (
+    <label className="btn btn-ghost btn-sm">
+      {hasFile ? 'Replace file' : 'Choose file'}
+      <span className="sr-only"> for {slot.label.en}</span>
+      <input
+        className="sr-only"
+        type="file"
+        accept={ACCEPT}
+        onChange={(e) => {
+          onFile(e.target.files?.[0]);
+        }}
+      />
+    </label>
+  );
+}
+
+/** One document slot: its name, the file chosen, reading state, and the file input (not in sample mode). */
 export function SlotCard({ slot, index, lang, file, sampleFile, state, retrying, onFile, onRetry }: SlotCardProps) {
   const reduce = useReduce();
   const n = slotNames(slot, lang);
-  const readOnly = sampleFile !== undefined;
-  const shown = sampleFile ?? (file ? { name: maskAadhaar(file.name), size: sizeLabel(file.size) } : null);
+  const shown = shownFile(sampleFile, file);
 
   return (
     <m.div className="card slot" {...fadeUp(reduce, STAGGER_DELAY_S + index * STAGGER_STEP_S)}>
       <div className="slottop">
-        <span className="dicon"><FileIcon size={16} /></span>
+        <span className="dicon">
+          <FileIcon size={16} />
+        </span>
         <div>
           <div className="slotname">{n.name}</div>
-          <div className="mr dev" lang={n.subLang} style={{ fontSize: 12, color: '#5B6478' }}>{n.sub}</div>
+          <div className="mr dev" lang={n.subLang} style={{ fontSize: 12, color: '#5B6478' }}>
+            {n.sub}
+          </div>
         </div>
       </div>
       <div className="file">
         <span className="mono">{shown?.name ?? 'No file chosen'}</span>
         <span>{shown?.size}</span>
       </div>
-      {state && <p className="slotnote" role="status" data-failed={state.status === 'failed'}>{state.message}</p>}
-      {state?.status === 'failed' && (
-        <button className="btn btn-ghost btn-sm" onClick={onRetry} disabled={retrying}>Retry this file</button>
-      )}
-      {shown && !state && <span className="ok"><Tick reduce={reduce} />Uploaded</span>}
-      {!readOnly && (
-        <label className="btn btn-ghost btn-sm">
-          {file ? 'Replace file' : 'Choose file'}
-          <span className="sr-only"> for {slot.label.en}</span>
-          <input
-            className="sr-only"
-            type="file"
-            accept="image/png,image/jpeg,image/webp,application/pdf"
-            onChange={(e) => onFile(e.target.files?.[0])}
-          />
-        </label>
-      )}
+      <SlotStatus state={state} hasFile={shown !== null} retrying={retrying} reduce={reduce} onRetry={onRetry} />
+      {sampleFile === undefined && <FilePicker slot={slot} hasFile={file !== undefined} onFile={onFile} />}
     </m.div>
   );
 }

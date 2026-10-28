@@ -17,6 +17,52 @@ const base = (over: Partial<ExtractedDocument>): ExtractedDocument => ({
   ...over,
 });
 
+const income = (over: Partial<ExtractedDocument>): ExtractedDocument =>
+  base({
+    documentTypes: ['income_certificate'],
+    language: 'mr',
+    applicantName: { original: 'आरव सुनील पाटील', english: 'Aarav Sunil Patil' },
+    issuingAuthority: 'Tehsildar, Haveli',
+    annualIncome: 240000,
+    ...over,
+  });
+
+/** File names and sizes the sample screen shows beside each slot. */
+const SAMPLE_FILES: SampleResponse['files'] = {
+  aadhaar: { name: 'aarav_aadhaar.pdf', size: '92 KB' },
+  caste_certificate: { name: 'aarav_caste.pdf', size: '148 KB' },
+  income_certificate: { name: 'aarav_income.pdf', size: '1 page · 121 KB' },
+  domicile: { name: 'aarav_domicile.pdf', size: '110 KB' },
+  bonafide: { name: 'aarav_bonafide.pdf', size: '87 KB' },
+  marksheet: { name: 'aarav_marksheet.pdf', size: '176 KB' },
+  bank_passbook: { name: 'aarav_passbook.pdf', size: '64 KB' },
+};
+
+/** The five documents that are fine in both versions of the sample. */
+function commonDocuments(fy: number): DocumentsBySlot {
+  return {
+    aadhaar: base({ documentTypes: ['aadhaar'], dateOfBirth: '2006-03-14', issuingAuthority: 'UIDAI' }),
+    caste_certificate: base({
+      documentTypes: ['caste_certificate'],
+      category: 'OBC',
+      issueDate: '2023-08-02',
+      issuingAuthority: 'Tehsildar, Haveli',
+    }),
+    domicile: base({
+      documentTypes: ['domicile_certificate'],
+      issueDate: '2023-08-02',
+      issuingAuthority: 'Tehsildar, Haveli',
+    }),
+    bonafide: base({
+      documentTypes: ['bonafide_certificate'],
+      issueDate: `${fy}-07-01`,
+      issuingAuthority: 'Fictional College of Arts and Science',
+    }),
+    bank_passbook: base({ documentTypes: ['bank_passbook'], issuingAuthority: 'Fictional Bank' }),
+  };
+}
+
+/** The sample applicant with two planted problems (and the fixed documents that clear them). */
 export function buildSample(now: Date): SampleResponse {
   const fy = fyStartYear(istDate(now));
   const form: ApplicationForm = {
@@ -26,23 +72,7 @@ export function buildSample(now: Date): SampleResponse {
     academicYear: `${fy}-${String(fy + 1).slice(2)}`,
     applicationType: 'Fresh',
   };
-
-  const common: DocumentsBySlot = {
-    aadhaar: base({ documentTypes: ['aadhaar'], dateOfBirth: '2006-03-14', issuingAuthority: 'UIDAI' }),
-    caste_certificate: base({ documentTypes: ['caste_certificate'], category: 'OBC', issueDate: '2023-08-02', issuingAuthority: 'Tehsildar, Haveli' }),
-    domicile: base({ documentTypes: ['domicile_certificate'], issueDate: '2023-08-02', issuingAuthority: 'Tehsildar, Haveli' }),
-    bonafide: base({ documentTypes: ['bonafide_certificate'], issueDate: `${fy}-07-01`, issuingAuthority: 'Fictional College of Arts and Science' }),
-    bank_passbook: base({ documentTypes: ['bank_passbook'], issuingAuthority: 'Fictional Bank' }),
-  };
-  const income = (over: Partial<ExtractedDocument>): ExtractedDocument =>
-    base({
-      documentTypes: ['income_certificate'],
-      language: 'mr',
-      applicantName: { original: 'आरव सुनील पाटील', english: 'Aarav Sunil Patil' },
-      issuingAuthority: 'Tehsildar, Haveli',
-      annualIncome: 240000,
-      ...over,
-    });
+  const common = commonDocuments(fy);
 
   const errorDocuments: DocumentsBySlot = {
     ...common,
@@ -69,14 +99,6 @@ export function buildSample(now: Date): SampleResponse {
     form,
     errorDocuments,
     fixedDocuments,
-    files: {
-      aadhaar: { name: 'aarav_aadhaar.pdf', size: '92 KB' },
-      caste_certificate: { name: 'aarav_caste.pdf', size: '148 KB' },
-      income_certificate: { name: 'aarav_income.pdf', size: '1 page · 121 KB' },
-      domicile: { name: 'aarav_domicile.pdf', size: '110 KB' },
-      bonafide: { name: 'aarav_bonafide.pdf', size: '87 KB' },
-      marksheet: { name: 'aarav_marksheet.pdf', size: '176 KB' },
-      bank_passbook: { name: 'aarav_passbook.pdf', size: '64 KB' },
-    },
+    files: SAMPLE_FILES,
   };
 }

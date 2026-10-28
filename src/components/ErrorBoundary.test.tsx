@@ -9,13 +9,21 @@ function Boom(): never {
 
 describe('ErrorBoundary', () => {
   it('renders children normally', () => {
-    render(<ErrorBoundary><p>fine</p></ErrorBoundary>);
+    render(
+      <ErrorBoundary>
+        <p>fine</p>
+      </ErrorBoundary>,
+    );
     expect(screen.getByText('fine')).toBeInTheDocument();
   });
 
   it('shows a friendly, accessible fallback when a child throws', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const { container } = render(<ErrorBoundary><Boom /></ErrorBoundary>);
+    const { container } = render(
+      <ErrorBoundary>
+        <Boom />
+      </ErrorBoundary>,
+    );
     expect(screen.getByRole('alert')).toHaveTextContent(/something went wrong/i);
     expect(screen.getByRole('button', { name: /reload formsure/i })).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();

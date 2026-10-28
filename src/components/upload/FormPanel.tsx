@@ -18,16 +18,29 @@ export interface FormPanelProps {
 export function FormPanel({ form, errors, readOnly, onForm }: FormPanelProps) {
   return (
     <section className="card panel" aria-labelledby="as-entered">
-      <p className="ptitle" id="as-entered">As entered on MahaDBT</p>
+      <p className="ptitle" id="as-entered">
+        As entered on MahaDBT
+      </p>
       <p className="pdesc">FormSure compares these with every document.</p>
       <div className="field">
         <label htmlFor="nm">Full name</label>
         <input
-          id="nm" value={form.fullName} readOnly={readOnly} maxLength={NAME_MAX_LENGTH} autoComplete="off"
-          aria-invalid={!!errors.fullName} aria-describedby={errors.fullName ? 'nm-err' : undefined}
-          onChange={(e) => onForm({ ...form, fullName: e.target.value })}
+          id="nm"
+          value={form.fullName}
+          readOnly={readOnly}
+          maxLength={NAME_MAX_LENGTH}
+          autoComplete="off"
+          aria-invalid={!!errors.fullName}
+          aria-describedby={errors.fullName ? 'nm-err' : undefined}
+          onChange={(e) => {
+            onForm({ ...form, fullName: e.target.value });
+          }}
         />
-        {errors.fullName && <p className="fielderr" id="nm-err">{errors.fullName}</p>}
+        {errors.fullName && (
+          <p className="fielderr" id="nm-err">
+            {errors.fullName}
+          </p>
+        )}
       </div>
       <div className="field">
         <label htmlFor="dob">Date of birth</label>
@@ -35,12 +48,21 @@ export function FormPanel({ form, errors, readOnly, onForm }: FormPanelProps) {
           <input id="dob" value={dayMonthYear(form.dateOfBirth)} readOnly />
         ) : (
           <input
-            id="dob" type="date" value={form.dateOfBirth} aria-invalid={!!errors.dateOfBirth}
+            id="dob"
+            type="date"
+            value={form.dateOfBirth}
+            aria-invalid={!!errors.dateOfBirth}
             aria-describedby={errors.dateOfBirth ? 'dob-err' : undefined}
-            onChange={(e) => onForm({ ...form, dateOfBirth: e.target.value })}
+            onChange={(e) => {
+              onForm({ ...form, dateOfBirth: e.target.value });
+            }}
           />
         )}
-        {errors.dateOfBirth && <p className="fielderr" id="dob-err">{errors.dateOfBirth}</p>}
+        {errors.dateOfBirth && (
+          <p className="fielderr" id="dob-err">
+            {errors.dateOfBirth}
+          </p>
+        )}
       </div>
       <div className="field">
         <label htmlFor="cg">Category</label>

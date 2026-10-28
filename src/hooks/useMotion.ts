@@ -2,7 +2,7 @@ import { useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 /** How long the ring's number takes to count up from 0, in milliseconds. */
-export const COUNT_UP_MS = 900;
+const COUNT_UP_MS = 900;
 
 /** True when the user asks for reduced motion: every animation in the app becomes a no-op. */
 export const useReduce = (): boolean => !!useReducedMotion();
@@ -24,7 +24,9 @@ export function useCountUp(target: number, reduce: boolean): number {
       if (t < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   }, [target, reduce]);
   return reduce ? target : value;
 }

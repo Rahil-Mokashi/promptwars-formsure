@@ -25,10 +25,14 @@ export function Header({ screen, lang, onLang, onHome }: HeaderProps) {
   const current = STEP_OF[screen] ?? 0;
   return (
     <header className="top">
-      <a className="skip" href="#main">Skip to main content</a>
+      <a className="skip" href="#main">
+        Skip to main content
+      </a>
       <div className="wrap topin">
         <button className="brand" onClick={onHome} aria-label="FormSure, back to start">
-          <span className="logo"><ShieldIcon /></span>
+          <span className="logo">
+            <ShieldIcon />
+          </span>
           <span className="brandname">FormSure</span>
         </button>
         {screen !== 'landing' && (
@@ -37,7 +41,12 @@ export function Header({ screen, lang, onLang, onHome }: HeaderProps) {
               const n = i + 1;
               const cls = n === current ? 'on' : n < current ? 'done' : '';
               return (
-                <div key={label} className={`step ${cls}`} aria-current={n === current ? 'step' : undefined} aria-label={`Step ${n}: ${label}`}>
+                <div
+                  key={label}
+                  className={`step ${cls}`}
+                  aria-current={n === current ? 'step' : undefined}
+                  aria-label={`Step ${n}: ${label}`}
+                >
                   <span className="stepnum">{n < current ? '✓' : n}</span>
                   <span className="steplabel">{label}</span>
                 </div>
@@ -47,7 +56,15 @@ export function Header({ screen, lang, onLang, onHome }: HeaderProps) {
         )}
         <div className="langs" role="group" aria-label="Language for fixes">
           {LANGS.map((l) => (
-            <button key={l.code} className={`lang ${l.code === lang ? 'on' : ''}`} onClick={() => onLang(l.code)} aria-pressed={l.code === lang} lang={l.code}>
+            <button
+              key={l.code}
+              className={`lang ${l.code === lang ? 'on' : ''}`}
+              onClick={() => {
+                onLang(l.code);
+              }}
+              aria-pressed={l.code === lang}
+              lang={l.code}
+            >
               {l.label}
             </button>
           ))}

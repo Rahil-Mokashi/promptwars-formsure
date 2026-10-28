@@ -1,3 +1,4 @@
+import { must } from '../test/must';
 import { describe, expect, it, vi } from 'vitest';
 import { ExtractionError, RateLimitError, UnavailableError } from '../core/errors';
 import type { ExtractedDocument, ReadProgress, SlotId } from '../core/types';
@@ -5,8 +6,16 @@ import { pdfFile } from '../test/files';
 import { readFiles, type ReadCache, type ReadDeps } from './readFiles';
 
 const doc = (name: string): ExtractedDocument => ({
-  documentTypes: ['marksheet'], language: 'en', applicantName: { original: name, english: name },
-  dateOfBirth: null, issueDate: null, issuingAuthority: null, category: null, annualIncome: null, pageCount: 1, legible: true,
+  documentTypes: ['marksheet'],
+  language: 'en',
+  applicantName: { original: name, english: name },
+  dateOfBirth: null,
+  issueDate: null,
+  issuingAuthority: null,
+  category: null,
+  annualIncome: null,
+  pageCount: 1,
+  legible: true,
 });
 const ORDER: SlotId[] = ['aadhaar', 'caste_certificate', 'income_certificate', 'domicile'];
 
@@ -22,16 +31,27 @@ function deferred<T>() {
 }
 const tick = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-function setup(overrides: Partial<ReadDeps> = {}, selected: SlotId[] = ['aadhaar', 'caste_certificate', 'income_certificate']) {
+function setup(
+  overrides: Partial<ReadDeps> = {},
+  selected: SlotId[] = ['aadhaar', 'caste_certificate', 'income_certificate'],
+) {
   const files = Object.fromEntries(selected.map((s) => [s, pdfFile(`${s}.pdf`)])) as Partial<Record<SlotId, File>>;
   const cache: ReadCache = new Map();
   const progress: ReadProgress[] = [];
   const done: [SlotId, string | undefined][] = [];
-  const pause = vi.fn<ReadDeps['pause']>(async () => undefined);
-  const extract = vi.fn<ReadDeps['extract']>(async (file) => doc(file.name));
+  const pause = vi.fn<ReadDeps['pause']>(() => Promise.resolve(undefined));
+  const extract = vi.fn<ReadDeps['extract']>((file) => Promise.resolve(doc(file.name)));
   const deps: ReadDeps = {
-    order: ORDER, files, cache, extract, pause, concurrency: 2, staggerMs: 2000,
-    onProgress: (p) => progress.push(p), onSlotDone: (s, m) => done.push([s, m]), isCancelled: () => false,
+    order: ORDER,
+    files,
+    cache,
+    extract,
+    pause,
+    concurrency: 2,
+    staggerMs: 2000,
+    onProgress: (p) => progress.push(p),
+    onSlotDone: (s, m) => done.push([s, m]),
+    isCancelled: () => false,
     ...overrides,
   };
   return { deps, files, cache, progress, done, pause, extract };
@@ -42,7 +62,7 @@ describe('readFiles: two at a time, started 2 seconds apart', () => {
     const { deps, extract } = setup();
     const gates = ORDER.map(() => deferred<ExtractedDocument>());
     let calls = 0;
-    extract.mockImplementation(() => (gates[calls++] as ReturnType<typeof deferred<ExtractedDocument>>).promise);
+    extract.mockImplementation(() => must(gates[calls++]).promise);
 
     const reading = readFiles(deps);
     await tick();
@@ -73,7 +93,7 @@ describe('readFiles: two at a time, started 2 seconds apart', () => {
 
   it('waits the stagger before every start except the first, and only for network reads', async () => {
     const { deps, pause, cache, files } = setup();
-    cache.set('aadhaar', { file: files.aadhaar as File, doc: doc('cached') });
+    cache.set('aadhaar', { file: must(files.aadhaar), doc: doc('cached') });
     await readFiles(deps);
     expect(pause).toHaveBeenCalledTimes(1); // two network reads: one stagger between them
     expect(pause).toHaveBeenCalledWith(2000);
@@ -81,7 +101,7 @@ describe('readFiles: two at a time, started 2 seconds apart', () => {
 
   it('reuses cached documents for unchanged files and re-reads a replaced file', async () => {
     const { deps, cache, files, extract } = setup();
-    cache.set('aadhaar', { file: files.aadhaar as File, doc: doc('cached') });
+    cache.set('aadhaar', { file: must(files.aadhaar), doc: doc('cached') });
     cache.set('caste_certificate', { file: pdfFile('old.pdf'), doc: doc('old') });
     const out = await readFiles(deps);
     expect(extract).toHaveBeenCalledTimes(2);
@@ -118,7 +138,7 @@ describe('readFiles: progress', () => {
 
   it('shows a busy countdown from either read, even an older one, then goes back to the latest file', async () => {
     const { deps, extract, progress } = setup({}, ['aadhaar', 'caste_certificate']);
-    const gate = deferred<void>();
+    const gate = deferred<undefined>();
     extract.mockImplementation(async (file, options) => {
       if (file.name.startsWith('aadhaar')) {
         await gate.promise; // by now the second read has started
@@ -126,7 +146,7 @@ describe('readFiles: progress', () => {
         options.onBusy?.(0);
         return doc(file.name);
       }
-      gate.resolve();
+      gate.resolve(undefined);
       return doc(file.name);
     });
     await readFiles(deps);
@@ -139,12 +159,17 @@ describe('readFiles: progress', () => {
 describe('readFiles: errors stay with their slot', () => {
   it('a bad scan fails only its own slot; the others are read and kept', async () => {
     const { deps, extract, done } = setup();
-    extract.mockImplementation(async (file) => {
-      if (file.name.startsWith('caste')) throw new ExtractionError('Could not read caste_certificate.pdf. Try a clearer scan or a different file.');
-      return doc(file.name);
-    });
+    extract.mockImplementation((file) =>
+      file.name.startsWith('caste')
+        ? Promise.reject(
+            new ExtractionError('Could not read caste_certificate.pdf. Try a clearer scan or a different file.'),
+          )
+        : Promise.resolve(doc(file.name)),
+    );
     const out = await readFiles(deps);
-    expect(out.failures).toEqual({ caste_certificate: 'Could not read caste_certificate.pdf. Try a clearer scan or a different file.' });
+    expect(out.failures).toEqual({
+      caste_certificate: 'Could not read caste_certificate.pdf. Try a clearer scan or a different file.',
+    });
     expect(Object.keys(out.documents)).toEqual(['aadhaar', 'income_certificate']);
     expect(out.stopped).toBe(false);
     expect(done.find(([s]) => s === 'caste_certificate')?.[1]).toMatch(/Could not read/);
@@ -186,7 +211,13 @@ describe('readFiles: errors stay with their slot', () => {
 describe('readFiles: cancelling', () => {
   it('stops before launching more reads when cancelled during the stagger pause', async () => {
     let cancelled = false;
-    const { deps, extract } = setup({ isCancelled: () => cancelled, pause: async () => void (cancelled = true) });
+    const { deps, extract } = setup({
+      isCancelled: () => cancelled,
+      pause: () => {
+        cancelled = true;
+        return Promise.resolve();
+      },
+    });
     const out = await readFiles(deps);
     expect(extract).toHaveBeenCalledTimes(1);
     expect(out.stopped).toBe(true);
@@ -195,10 +226,11 @@ describe('readFiles: cancelling', () => {
   it('discards results and failures that arrive after cancelling, and caches nothing', async () => {
     let cancelled = false;
     const { deps, extract, cache, done } = setup({ isCancelled: () => cancelled }, ['aadhaar', 'caste_certificate']);
-    extract.mockImplementation(async (file) => {
+    extract.mockImplementation((file) => {
       cancelled = true;
-      if (file.name.startsWith('caste')) throw new ExtractionError('late');
-      return doc(file.name);
+      return file.name.startsWith('caste')
+        ? Promise.reject(new ExtractionError('late'))
+        : Promise.resolve(doc(file.name));
     });
     const out = await readFiles(deps);
     expect(out.stopped).toBe(true);
@@ -210,10 +242,10 @@ describe('readFiles: cancelling', () => {
   it('does not report busy countdowns once cancelled', async () => {
     let cancelled = false;
     const { deps, extract, progress } = setup({ isCancelled: () => cancelled }, ['aadhaar']);
-    extract.mockImplementation(async (file, options) => {
+    extract.mockImplementation((file, options) => {
       cancelled = true;
       options.onBusy?.(5);
-      return doc(file.name);
+      return Promise.resolve(doc(file.name));
     });
     await readFiles(deps);
     expect(progress.some((p) => p.detail.includes('busy'))).toBe(false);

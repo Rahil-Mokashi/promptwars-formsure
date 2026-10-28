@@ -45,6 +45,115 @@ interface Job {
   index: number;
 }
 
+/** Mutable state shared by the reads of one batch. */
+interface Batch {
+  deps: ReadDeps;
+  total: number;
+  jobs: Job[];
+  results: Map<SlotId, ExtractedDocument>;
+  failures: Partial<Record<SlotId, string>>;
+  /** Reads waiting to retry after a 429, with seconds left. */
+  busy: Map<SlotId, number>;
+  stopped: boolean;
+  fatal: UnavailableError | undefined;
+  /** The most recently started read. */
+  latest: Job | undefined;
+}
+
+/** Splits the selected files into cached results and the jobs that still need a network read. */
+function plan(deps: ReadDeps): { slots: SlotId[]; jobs: Job[]; results: Map<SlotId, ExtractedDocument> } {
+  const slots = deps.order.filter((id) => deps.files[id]);
+  const results = new Map<SlotId, ExtractedDocument>();
+  const jobs: Job[] = [];
+  slots.forEach((slotId, i) => {
+    const file = deps.files[slotId];
+    if (!file) return;
+    const cached = deps.cache.get(slotId);
+    if (cached?.file === file) results.set(slotId, cached.doc);
+    else jobs.push({ slotId, file, index: i + 1 });
+  });
+  return { slots, jobs, results };
+}
+
+const progressOf = (batch: Batch, job: Job, detail: string): ReadProgress => ({
+  index: job.index,
+  total: batch.total,
+  slotId: job.slotId,
+  detail,
+});
+
+/** Shows a busy countdown if any read is waiting; otherwise the most recently started read. */
+function report(batch: Batch): void {
+  if (batch.deps.isCancelled()) return;
+  const [slotId, left] = [...batch.busy.entries()][0] ?? [];
+  const waiting = batch.jobs.find((j) => j.slotId === slotId);
+  if (waiting && left !== undefined) {
+    batch.deps.onProgress(progressOf(batch, waiting, `Gemini is busy, retrying in ${left}s…`));
+  } else if (batch.latest) {
+    batch.deps.onProgress(progressOf(batch, batch.latest, maskAadhaar(batch.latest.file.name)));
+  }
+}
+
+/** Records a failed read, isolating it to its slot. A rate limit that outlasts every backoff stops new reads. */
+function fail(batch: Batch, job: Job, err: unknown): void {
+  batch.busy.delete(job.slotId);
+  if (err instanceof UnavailableError) {
+    batch.fatal ??= err;
+    batch.stopped = true;
+    return;
+  }
+  if (batch.deps.isCancelled()) return;
+  const message = err instanceof ExtractionError ? err.message : `Could not read ${maskAadhaar(job.file.name)}.`;
+  batch.failures[job.slotId] = message;
+  batch.deps.onSlotDone(job.slotId, message);
+  if (err instanceof RateLimitError) batch.stopped = true;
+}
+
+/** Reads one file; results that arrive after cancelling are discarded. */
+async function run(batch: Batch, job: Job): Promise<void> {
+  const { deps } = batch;
+  try {
+    const doc = await deps.extract(job.file, {
+      onBusy: (left) => {
+        if (left > 0) batch.busy.set(job.slotId, left);
+        else batch.busy.delete(job.slotId);
+        report(batch);
+      },
+    });
+    if (deps.isCancelled()) return;
+    deps.cache.set(job.slotId, { file: job.file, doc });
+    batch.results.set(job.slotId, doc);
+    deps.onSlotDone(job.slotId);
+  } catch (err) {
+    fail(batch, job, err);
+  }
+}
+
+/** True when no more reads should start. */
+const mustStop = (batch: Batch): boolean => batch.stopped || batch.deps.isCancelled();
+
+/** Starts the jobs: at most `concurrency` at a time, each `staggerMs` after the previous start. */
+async function launch(batch: Batch): Promise<void> {
+  const { deps } = batch;
+  const running = new Set<Promise<void>>();
+  let started = 0;
+  for (const job of batch.jobs) {
+    if (running.size >= deps.concurrency) await Promise.race(running);
+    if (mustStop(batch)) break;
+    if (started > 0) {
+      deps.onProgress(progressOf(batch, job, 'Pausing briefly to stay within the free quota…'));
+      await deps.pause(deps.staggerMs);
+      if (mustStop(batch)) break;
+    }
+    batch.latest = job;
+    report(batch);
+    const promise: Promise<void> = run(batch, job).finally(() => running.delete(promise));
+    running.add(promise);
+    started++;
+  }
+  await Promise.all(running);
+}
+
 /**
  * Reads the selected files, up to `concurrency` at a time, starting them `staggerMs` apart.
  * - Files already read (same file object) come from the cache and cost no quota.
@@ -54,85 +163,25 @@ interface Job {
  * @throws {UnavailableError} live reading is not configured (raised after reads in flight have finished)
  */
 export async function readFiles(deps: ReadDeps): Promise<ReadOutcome> {
-  const slots = deps.order.filter((id) => deps.files[id]);
-  const results = new Map<SlotId, ExtractedDocument>();
-  const failures: Partial<Record<SlotId, string>> = {};
-  const jobs: Job[] = [];
-
-  slots.forEach((slotId, i) => {
-    const file = deps.files[slotId];
-    if (!file) return;
-    const cached = deps.cache.get(slotId);
-    if (cached && cached.file === file) results.set(slotId, cached.doc);
-    else jobs.push({ slotId, file, index: i + 1 });
-  });
-
-  let stopped = false;
-  let fatal: unknown;
-  let latest: Job | undefined; // the most recently started read
-  const busy = new Map<SlotId, number>(); // reads waiting to retry after a 429, with seconds left
-
-  /** Shows a busy countdown if any read is waiting; otherwise the most recently started read. */
-  const report = (): void => {
-    if (deps.isCancelled()) return;
-    const [slotId, left] = [...busy.entries()][0] ?? [];
-    const job = jobs.find((j) => j.slotId === slotId);
-    if (job && left !== undefined) deps.onProgress({ index: job.index, total: slots.length, slotId: job.slotId, detail: `Gemini is busy, retrying in ${left}s…` });
-    else if (latest) deps.onProgress({ index: latest.index, total: slots.length, slotId: latest.slotId, detail: maskAadhaar(latest.file.name) });
+  const { slots, jobs, results } = plan(deps);
+  const batch: Batch = {
+    deps,
+    total: slots.length,
+    jobs,
+    results,
+    failures: {},
+    busy: new Map(),
+    stopped: false,
+    fatal: undefined,
+    latest: undefined,
   };
+  await launch(batch);
 
-  const run = async (job: Job): Promise<void> => {
-    const name = maskAadhaar(job.file.name);
-    try {
-      const doc = await deps.extract(job.file, {
-        onBusy: (left) => {
-          if (left > 0) busy.set(job.slotId, left);
-          else busy.delete(job.slotId);
-          report();
-        },
-      });
-      if (deps.isCancelled()) return;
-      deps.cache.set(job.slotId, { file: job.file, doc });
-      results.set(job.slotId, doc);
-      deps.onSlotDone(job.slotId);
-    } catch (err) {
-      busy.delete(job.slotId);
-      if (err instanceof UnavailableError) {
-        fatal ??= err;
-        stopped = true;
-        return;
-      }
-      if (deps.isCancelled()) return;
-      const message = err instanceof ExtractionError ? err.message : `Could not read ${name}.`;
-      failures[job.slotId] = message;
-      deps.onSlotDone(job.slotId, message);
-      if (err instanceof RateLimitError) stopped = true;
-    }
-  };
-
-  const running = new Set<Promise<void>>();
-  let started = 0;
-  for (const job of jobs) {
-    if (running.size >= deps.concurrency) await Promise.race(running);
-    if (stopped || deps.isCancelled()) break;
-    if (started > 0) {
-      deps.onProgress({ index: job.index, total: slots.length, slotId: job.slotId, detail: 'Pausing briefly to stay within the free quota…' });
-      await deps.pause(deps.staggerMs);
-      if (stopped || deps.isCancelled()) break;
-    }
-    latest = job;
-    report();
-    const promise: Promise<void> = run(job).finally(() => running.delete(promise));
-    running.add(promise);
-    started++;
-  }
-  await Promise.all(running);
-
-  if (fatal !== undefined) throw fatal;
+  if (batch.fatal) throw batch.fatal;
   const documents: DocumentsBySlot = {};
   for (const slotId of slots) {
-    const doc = results.get(slotId);
+    const doc = batch.results.get(slotId);
     if (doc) documents[slotId] = doc;
   }
-  return { documents, failures, stopped: stopped || deps.isCancelled() };
+  return { documents, failures: batch.failures, stopped: batch.stopped || deps.isCancelled() };
 }

@@ -5,14 +5,16 @@ import { notEvaluated, type Outcome, type RuleContext } from './rules/context';
 import { isEvaluable, type Pack, type Rule } from './schema';
 import type { ApplicationForm, AuditReport, Check, DocumentsBySlot, Lang, Trio } from './types';
 
-export { fyLabel, fyStartYear, longDate } from './dates';
-export { phonetic } from './names';
-
 const PERCENT = 100;
 
 /** Fills `{year}` in a fix text; Marathi gets Devanagari digits. */
-const fillYear = (text: string, lang: Lang, year: string): string => text.replace('{year}', lang === 'mr' ? toDevanagari(year) : year);
-const fillFix = (fix: Trio, year: string): Trio => ({ en: fillYear(fix.en, 'en', year), mr: fillYear(fix.mr, 'mr', year), hi: fillYear(fix.hi, 'hi', year) });
+const fillYear = (text: string, lang: Lang, year: string): string =>
+  text.replace('{year}', lang === 'mr' ? toDevanagari(year) : year);
+const fillFix = (fix: Trio, year: string): Trio => ({
+  en: fillYear(fix.en, 'en', year),
+  mr: fillYear(fix.mr, 'mr', year),
+  hi: fillYear(fix.hi, 'hi', year),
+});
 
 /** Why a rule is not applied, in the words the report uses. */
 const skipReason = (rule: Rule): string =>
@@ -62,7 +64,8 @@ export function runAudit(pack: Pack, form: ApplicationForm, documents: Documents
   });
 
   const scored = checks.filter((c) => !c.advisory);
-  const count = (status: Check['status'], from: readonly Check[] = scored): number => from.filter((c) => c.status === status).length;
+  const count = (status: Check['status'], from: readonly Check[] = scored): number =>
+    from.filter((c) => c.status === status).length;
   const passed = count('pass');
   const failed = count('fail');
   const needsReview = count('needs_review');

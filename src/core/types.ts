@@ -6,13 +6,7 @@ export type Trio = Record<Lang, string>;
 
 /** The seven document slots of the scheme pack. */
 export type SlotId =
-  | 'aadhaar'
-  | 'caste_certificate'
-  | 'income_certificate'
-  | 'domicile'
-  | 'bonafide'
-  | 'marksheet'
-  | 'bank_passbook';
+  'aadhaar' | 'caste_certificate' | 'income_certificate' | 'domicile' | 'bonafide' | 'marksheet' | 'bank_passbook';
 
 /** Kinds of document the model can recognise in a file. */
 export type DocumentType =
@@ -57,10 +51,10 @@ export interface ApplicationForm {
 export type DocumentsBySlot = Partial<Record<SlotId, ExtractedDocument>>;
 
 /** How trustworthy a rule's source is: an official page, a college notice, or a secondary guide or news item. */
-export type SourceKind = 'official' | 'college-notice' | 'secondary';
+type SourceKind = 'official' | 'college-notice' | 'secondary';
 
 /** Where a rule comes from. */
-export interface Source {
+interface Source {
   label: string;
   url: string;
   kind: SourceKind;

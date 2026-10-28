@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { IssueCard } from '../components/report/IssueCard';
+import { PassedChecks } from '../components/report/PassedChecks';
 import { ScoreCard } from '../components/report/ScoreCard';
-import { RefreshIcon, Tick } from '../components/icons';
+import { RefreshIcon } from '../components/icons';
 import { LANGS } from '../components/Header';
 import { PRECHECK_DISCLAIMER, precheckSummary } from '../core/copy';
 import { previewFor } from '../core/preview';
@@ -25,7 +26,10 @@ export function Report({ pack, docs, report, lang, canRecheck, onReupload, onRec
   const reduce = useReduce();
   // Scored issues first, advisory warnings after them.
   const issues = useMemo(
-    () => report.checks.filter((c) => c.status === 'fail' || c.status === 'needs_review').sort((a, b) => Number(a.advisory) - Number(b.advisory)),
+    () =>
+      report.checks
+        .filter((c) => c.status === 'fail' || c.status === 'needs_review')
+        .sort((a, b) => Number(a.advisory) - Number(b.advisory)),
     [report],
   );
   const passed = useMemo(() => report.checks.filter((c) => c.status === 'pass'), [report]);
@@ -36,35 +40,36 @@ export function Report({ pack, docs, report, lang, canRecheck, onReupload, onRec
     <main className="wrap page" id="main" tabIndex={-1}>
       <h1 className="h2">{precheckSummary(report.passed, report.failed, report.needsReview)}</h1>
       <p className="sub">
-        {PRECHECK_DISCLAIMER} Each issue shows what FormSure found, why it matters, and how to fix it. Fixes are shown in {langName}.
+        {PRECHECK_DISCLAIMER} Each issue shows what FormSure found, why it matters, and how to fix it. Fixes are shown
+        in {langName}.
       </p>
       <div className="reportgrid">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <ScoreCard report={report} />
-          <section className="card panel" aria-labelledby="passed-h">
-            <p className="ptitle" id="passed-h">Passed checks</p>
-            <ul className="mini" style={{ marginTop: 12 }}>
-              {passed.map((c) => (
-                <li key={c.ruleId}>
-                  <span className="cicon ci-pass" style={{ width: 22, height: 22 }}><Tick size={12} reduce={reduce} /></span>
-                  {c.label}
-                  {c.advisory && <span className="ctag">Advisory</span>}
-                </li>
-              ))}
-            </ul>
-          </section>
+          <PassedChecks checks={passed} reduce={reduce} />
         </div>
         <div className="issues">
           {issues.map((check, i) => (
             <IssueCard
-              key={check.ruleId} check={check} index={i} lang={lang} open={open === check.ruleId} reduce={reduce}
-              preview={previewFor(check, docs, pack)} onToggle={() => setOpen(open === check.ruleId ? '' : check.ruleId)}
+              key={check.ruleId}
+              check={check}
+              index={i}
+              lang={lang}
+              open={open === check.ruleId}
+              reduce={reduce}
+              preview={previewFor(check, docs, pack)}
+              onToggle={() => {
+                setOpen(open === check.ruleId ? '' : check.ruleId);
+              }}
             />
           ))}
           <div className="actions" style={{ marginTop: 8 }}>
-            <button className="btn btn-ghost" onClick={onReupload}>Re-upload documents</button>
+            <button className="btn btn-ghost" onClick={onReupload}>
+              Re-upload documents
+            </button>
             <button className="btn btn-primary" onClick={onRecheck}>
-              {canRecheck ? 'I’ve fixed these, re-check' : 'I’ve fixed these, re-upload'}<RefreshIcon />
+              {canRecheck ? 'I’ve fixed these, re-check' : 'I’ve fixed these, re-upload'}
+              <RefreshIcon />
             </button>
           </div>
         </div>

@@ -2,7 +2,7 @@ import { SOURCE_KIND_LABEL } from './copy';
 import { isEvaluable, type Pack } from './schema';
 
 /** A test that covers a rule: the file under `src/` and a distinctive part of the test's title. */
-export interface RuleTest {
+interface RuleTest {
   file: string;
   title: string;
 }
@@ -34,17 +34,25 @@ export const RULE_DOCS: Readonly<Record<string, RuleDoc>> = {
     ],
   },
   'income-ncl': {
-    description: 'For OBC, SBC and VJNT applicants the income certificate slot holds the income certificate and the non-creamy-layer certificate in one PDF.',
+    description:
+      'For OBC, SBC and VJNT applicants the income certificate slot holds the income certificate and the non-creamy-layer certificate in one PDF.',
     tests: [
       { file: 'core/engine.test.ts', title: 'is not evaluated for a category outside OBC / SBC / VJNT' },
-      { file: 'core/engine.test.ts', title: 'says there is no matching certificate when nothing was recognised in the file' },
+      {
+        file: 'core/engine.test.ts',
+        title: 'says there is no matching certificate when nothing was recognised in the file',
+      },
     ],
   },
   'name-match': {
-    description: 'The applicant name matches the form on all seven documents (English exactly after normalisation, Devanagari through a phonetic key; order swaps and initials need review).',
+    description:
+      'The applicant name matches the form on all seven documents (English exactly after normalisation, Devanagari through a phonetic key; order swaps and initials need review).',
     tests: [
       { file: 'core/nameMatch.test.ts', title: 'an unreadable name on ANY of the seven documents needs review' },
-      { file: 'core/nameMatch.test.ts', title: 'a Devanagari document passes on the phonetic key of its transliteration' },
+      {
+        file: 'core/nameMatch.test.ts',
+        title: 'a Devanagari document passes on the phonetic key of its transliteration',
+      },
     ],
   },
   'dob-match': {
@@ -100,7 +108,12 @@ export function renderRegister(pack: Pack): string {
 
   lines.push('', '## Evidence', '');
   for (const rule of pack.rules) {
-    lines.push(`### \`${rule.id}\` — ${rule.label}`, '', `Status: **${rule.status}**. ${isEvaluable(rule) ? 'Applied.' : 'Not evaluated.'} Last checked ${rule.lastChecked}.`, '');
+    lines.push(
+      `### \`${rule.id}\` — ${rule.label}`,
+      '',
+      `Status: **${rule.status}**. ${isEvaluable(rule) ? 'Applied.' : 'Not evaluated.'} Last checked ${rule.lastChecked}.`,
+      '',
+    );
     for (const e of rule.evidence) {
       lines.push(`- **${SOURCE_KIND_LABEL[e.kind]}**, [${e.label}](${e.url}): “${e.quote}”`);
     }

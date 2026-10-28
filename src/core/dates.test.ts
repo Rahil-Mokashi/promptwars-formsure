@@ -11,7 +11,20 @@ describe('isRealDate: strict calendar dates', () => {
     expect(isRealDate('2026-12-31')).toBe(true);
   });
   it('rejects impossible dates and malformed text', () => {
-    for (const bad of ['2026-99-99', '2026-00-10', '2026-13-01', '2026-04-31', '2025-02-29', '1900-02-29', '2026-02-00', '26-01-01', '2026/01/01', '2026-1-1', '', 'tomorrow']) {
+    for (const bad of [
+      '2026-99-99',
+      '2026-00-10',
+      '2026-13-01',
+      '2026-04-31',
+      '2025-02-29',
+      '1900-02-29',
+      '2026-02-00',
+      '26-01-01',
+      '2026/01/01',
+      '2026-1-1',
+      '',
+      'tomorrow',
+    ]) {
       expect(isRealDate(bad), bad).toBe(false);
     }
   });

@@ -9,9 +9,18 @@ import { MARKSHEET_JSON, pdfFile } from './test/files';
 import { clickRun } from './test/ui';
 
 const hoisted = vi.hoisted(() => ({ generate: vi.fn<(req: GenerateRequest) => Promise<string>>() }));
-vi.mock('./services/firebase', () => ({ createFirebaseGenerate: () => hoisted.generate, isLiveReadingAvailable: () => true }));
-vi.mock('./services/rateLimiter', async (importOriginal) => ({ ...(await importOriginal<typeof import('./services/rateLimiter')>()), geminiLimiter: { acquire: async () => undefined } }));
-vi.mock('./core/constants', async (importOriginal) => ({ ...(await importOriginal<typeof import('./core/constants')>()), READ_STAGGER_MS: 0 }));
+vi.mock('./services/firebase', () => ({
+  createFirebaseGenerate: () => hoisted.generate,
+  isLiveReadingAvailable: () => true,
+}));
+vi.mock('./services/rateLimiter', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./services/rateLimiter')>()),
+  geminiLimiter: { acquire: () => Promise.resolve(undefined) },
+}));
+vi.mock('./core/constants', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./core/constants')>()),
+  READ_STAGGER_MS: 0,
+}));
 
 beforeAll(() => {
   (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ = true;
@@ -36,7 +45,9 @@ describe('consent before live reading', () => {
     await toUpload(user);
     await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('a.pdf'));
     await screen.findByText('a.pdf');
-    const box = screen.getByRole('checkbox', { name: 'Your documents are sent to Google Gemini via Firebase only to read them. Nothing is stored.' });
+    const box = screen.getByRole('checkbox', {
+      name: 'Your documents are sent to Google Gemini via Firebase only to read them. Nothing is stored.',
+    });
     expect(box).toHaveAccessibleDescription(/whole scan is sent, including your Aadhaar number and QR code/);
     expect(box).not.toBeChecked();
     expect(screen.getByRole('button', { name: /run formsure check/i })).toBeDisabled();
@@ -78,8 +89,12 @@ describe('privacy: nothing is stored, nothing sensitive is logged', () => {
 
   it('console output never contains names, numbers or raw provider messages', async () => {
     const user = userEvent.setup();
-    const spies = (['error', 'warn', 'log', 'info', 'debug'] as const).map((level) => vi.spyOn(console, level).mockImplementation(() => undefined));
-    hoisted.generate.mockRejectedValue(Object.assign(new Error('internal failure for Aarav Sunil Patil 1234 5678 9012'), { status: 500 }));
+    const spies = (['error', 'warn', 'log', 'info', 'debug'] as const).map((level) =>
+      vi.spyOn(console, level).mockImplementation(() => undefined),
+    );
+    hoisted.generate.mockRejectedValue(
+      Object.assign(new Error('internal failure for Aarav Sunil Patil 1234 5678 9012'), { status: 500 }),
+    );
     render(<App />);
     await toUpload(user);
     await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('1234 5678 9012.pdf'));
@@ -98,17 +113,26 @@ describe('privacy: nothing is stored, nothing sensitive is logged', () => {
     await toUpload(user);
     await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('a.pdf'));
     await screen.findByText('a.pdf');
-    await act(async () => {
+    act(() => {
       window.dispatchEvent(new Event('pagehide'));
     });
-    await waitFor(() => expect(screen.queryByText('a.pdf')).toBeNull(), { timeout: 10_000 });
+    await waitFor(
+      () => {
+        expect(screen.queryByText('a.pdf')).toBeNull();
+      },
+      { timeout: 10_000 },
+    );
   });
 });
 
 describe('browser storage use is confined to the limiter', () => {
   const sourceFiles = (dir: string): string[] =>
     readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-      e.isDirectory() ? sourceFiles(`${dir}/${e.name}`) : /\.(ts|tsx)$/.test(e.name) && !/\.test\.|test-setup|\/test\//.test(`${dir}/${e.name}`) ? [`${dir}/${e.name}`] : [],
+      e.isDirectory()
+        ? sourceFiles(`${dir}/${e.name}`)
+        : /\.(ts|tsx)$/.test(e.name) && !/\.test\.|test-setup|\/test\//.test(`${dir}/${e.name}`)
+          ? [`${dir}/${e.name}`]
+          : [],
     );
 
   it('no application file uses localStorage, IndexedDB or the Cache API, and only rateLimiter.ts uses sessionStorage', () => {
@@ -119,7 +143,8 @@ describe('browser storage use is confined to the limiter', () => {
         .replace(/\/\*[\s\S]*?\*\//g, '')
         .replace(/^\s*\/\/.*$/gm, ''); // comments may mention storage
       expect(code, file).not.toMatch(/\blocalStorage\b|\bindexedDB\b|\bcaches\.(open|match)\b/);
-      if (!file.replace(/\\/g, '/').endsWith('services/rateLimiter.ts')) expect(code, file).not.toMatch(/\bsessionStorage\b/);
+      if (!file.replace(/\\/g, '/').endsWith('services/rateLimiter.ts'))
+        expect(code, file).not.toMatch(/\bsessionStorage\b/);
     }
   });
 });

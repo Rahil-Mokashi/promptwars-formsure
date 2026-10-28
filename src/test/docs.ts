@@ -1,3 +1,4 @@
+import { omit } from '../core/object';
 import { runAudit } from '../core/engine';
 import { buildSample } from '../core/sample';
 import { mahadbtPack, type Pack } from '../core/schema';
@@ -22,19 +23,26 @@ export function patchDoc(docs: DocumentsBySlot, slot: SlotId, patch: Partial<Ext
 /** Returns `docs` without one slot. */
 export function withoutDoc(docs: DocumentsBySlot, slot: SlotId): DocumentsBySlot {
   const copy = { ...docs };
-  delete copy[slot];
-  return copy;
+  return omit(copy, slot);
 }
 
 /** The shipped pack with the listed rules forced to verified (with a stand-in college-notice source). */
-export const verifying = (ruleIds: readonly string[]): Pack => ({
+const verifying = (ruleIds: readonly string[]): Pack => ({
   ...mahadbtPack,
   rules: mahadbtPack.rules.map((r) =>
     ruleIds.includes(r.id)
       ? {
           ...r,
           status: 'verified' as const,
-          evidence: [{ label: 'test', url: 'https://example.org/', kind: 'college-notice' as const, quote: 'stand-in evidence for tests' }, ...r.evidence],
+          evidence: [
+            {
+              label: 'test',
+              url: 'https://example.org/',
+              kind: 'college-notice' as const,
+              quote: 'stand-in evidence for tests',
+            },
+            ...r.evidence,
+          ],
         }
       : r,
   ),
@@ -47,7 +55,12 @@ export const verifying = (ruleIds: readonly string[]): Pack => ({
 export const allRulesPack: Pack = verifying(mahadbtPack.rules.filter((r) => r.id !== 'income-limit').map((r) => r.id));
 
 /** Runs the audit with every rule applied (see {@link allRulesPack}). */
-export function audit(docs: DocumentsBySlot, form: ApplicationForm = sample.form, now: Date = NOW, pack: Pack = allRulesPack): AuditReport {
+export function audit(
+  docs: DocumentsBySlot,
+  form: ApplicationForm = sample.form,
+  now: Date = NOW,
+  pack: Pack = allRulesPack,
+): AuditReport {
   return runAudit(pack, form, docs, now);
 }
 
@@ -59,10 +72,23 @@ export function checkOf(report: AuditReport, ruleId: string): Check {
 }
 
 /** Runs the audit with the pack exactly as shipped. */
-export const shippedAudit = (docs: DocumentsBySlot, form: ApplicationForm = sample.form, now: Date = NOW): AuditReport => audit(docs, form, now, mahadbtPack);
+export const shippedAudit = (
+  docs: DocumentsBySlot,
+  form: ApplicationForm = sample.form,
+  now: Date = NOW,
+): AuditReport => audit(docs, form, now, mahadbtPack);
 
 /** Status of one rule after auditing `docs`. */
-export const statusOf = (docs: DocumentsBySlot, ruleId: string, form: ApplicationForm = sample.form): Check['status'] => checkOf(audit(docs, form), ruleId).status;
+export const statusOf = (docs: DocumentsBySlot, ruleId: string, form: ApplicationForm = sample.form): Check['status'] =>
+  checkOf(audit(docs, form), ruleId).status;
 
 /** The seven required slots. */
-export const ALL_SLOTS: readonly SlotId[] = ['aadhaar', 'caste_certificate', 'income_certificate', 'domicile', 'bonafide', 'marksheet', 'bank_passbook'];
+export const ALL_SLOTS: readonly SlotId[] = [
+  'aadhaar',
+  'caste_certificate',
+  'income_certificate',
+  'domicile',
+  'bonafide',
+  'marksheet',
+  'bank_passbook',
+];

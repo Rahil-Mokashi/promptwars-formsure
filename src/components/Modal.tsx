@@ -1,8 +1,9 @@
 import { m } from 'framer-motion';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
 import { useReduce } from '../hooks/useMotion';
 
-const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
+const FOCUSABLE =
+  'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
 const OPEN_S = 0.25;
 const OPEN_RISE_PX = 18;
 const OPEN_SCALE_FROM = 0.98;
@@ -48,11 +49,11 @@ function inertBackground(overlay: HTMLElement | null): HTMLElement[] {
   return marked;
 }
 
-/** Accessible modal: labelled dialog, background inert, Escape closes, Tab stays inside, focus returns to the opener. */
-export function Modal({ title, onClose, children, printable }: ModalProps) {
-  const reduce = useReduce();
-  const titleId = useId();
-  const box = useRef<HTMLDivElement>(null);
+/**
+ * While the dialog is open: focus moves into it, the background is inert, Escape closes, Tab stays inside,
+ * and on close focus returns to the element that opened it.
+ */
+function useDialogFocus(box: RefObject<HTMLDivElement | null>, onClose: () => void): void {
   const close = useRef(onClose);
   useEffect(() => {
     close.current = onClose;
@@ -64,7 +65,10 @@ export function Modal({ title, onClose, children, printable }: ModalProps) {
     const background = inertBackground(box.current?.parentElement ?? null);
     box.current?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') return close.current();
+      if (event.key === 'Escape') {
+        close.current();
+        return;
+      }
       if (event.key === 'Tab' && box.current) trapTab(event, box.current);
     };
     document.addEventListener('keydown', onKey);
@@ -73,18 +77,46 @@ export function Modal({ title, onClose, children, printable }: ModalProps) {
       for (const el of background) el.removeAttribute('inert');
       opener?.focus();
     };
-  }, []);
+  }, [box]);
+}
+
+/** Accessible modal: labelled dialog, background inert, Escape closes, Tab stays inside, focus returns to the opener. */
+export function Modal({ title, onClose, children, printable }: ModalProps) {
+  const reduce = useReduce();
+  const titleId = useId();
+  const box = useRef<HTMLDivElement>(null);
+  useDialogFocus(box, onClose);
 
   const entrance = reduce
     ? {}
-    : { initial: { opacity: 0, y: OPEN_RISE_PX, scale: OPEN_SCALE_FROM }, animate: { opacity: 1, y: 0, scale: 1 }, transition: { duration: OPEN_S } };
+    : {
+        initial: { opacity: 0, y: OPEN_RISE_PX, scale: OPEN_SCALE_FROM },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        transition: { duration: OPEN_S },
+      };
 
   return (
-    <div className="overlay" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <m.div ref={box} className={`modal ${printable ? 'printable' : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} {...entrance}>
+    <div
+      className="overlay"
+      role="presentation"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <m.div
+        ref={box}
+        className={`modal ${printable ? 'printable' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        {...entrance}
+      >
         <div className="modalhead noprint">
           <h2 id={titleId}>{title}</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>
+            Close
+          </button>
         </div>
         {children}
       </m.div>

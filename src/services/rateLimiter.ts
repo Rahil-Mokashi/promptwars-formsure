@@ -1,4 +1,11 @@
-import { DAY_MS, LIMITER_STORAGE_KEY, MAX_REQUESTS_PER_DAY, MAX_REQUESTS_PER_WINDOW, RATE_WINDOW_MS, SECOND_MS } from '../core/constants';
+import {
+  DAY_MS,
+  LIMITER_STORAGE_KEY,
+  MAX_REQUESTS_PER_DAY,
+  MAX_REQUESTS_PER_WINDOW,
+  RATE_WINDOW_MS,
+  SECOND_MS,
+} from '../core/constants';
 import { RateLimitError } from '../core/errors';
 import { sleep as realSleep } from './sleep';
 
@@ -12,7 +19,7 @@ export interface RateLimiter {
 }
 
 /** The part of `Storage` the limiter needs. `sessionStorage` fits. */
-export type LimiterStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+type LimiterStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 /** Options for {@link createRateLimiter}; every field is injectable for tests. */
 export interface RateLimiterOptions {
@@ -31,7 +38,8 @@ export interface RateLimiterOptions {
   storageKey?: string;
 }
 
-const DAILY_MESSAGE = 'This device has used today’s limit of Gemini reads. Try again tomorrow, or use the sample applicant.';
+const DAILY_MESSAGE =
+  'This device has used today’s limit of Gemini reads. Try again tomorrow, or use the sample applicant.';
 
 /** Drops timestamps older than `windowMs`. */
 function trim(calls: number[], now: number, windowMs: number): void {
@@ -44,7 +52,10 @@ function load(storage: LimiterStorage | null, key: string, now: number, windowMs
   try {
     const parsed: unknown = JSON.parse(storage.getItem(key) ?? '[]');
     if (!Array.isArray(parsed)) return [];
-    const calls = parsed.filter((t): t is number => typeof t === 'number' && Number.isFinite(t) && t <= now).sort((a, b) => a - b).slice(-cap);
+    const calls = parsed
+      .filter((t): t is number => typeof t === 'number' && Number.isFinite(t) && t <= now)
+      .sort((a, b) => a - b)
+      .slice(-cap);
     trim(calls, now, windowMs);
     return calls;
   } catch {

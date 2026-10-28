@@ -5,9 +5,14 @@ import { mahadbtPack, toWirePack } from './schema';
 import type { Check } from './types';
 
 const pack = toWirePack(mahadbtPack);
-const docs = patchDoc(sample.errorDocuments, 'income_certificate', { issueDate: '2025-02-01', issuingAuthority: 'Tehsildar' });
-const check = (ruleId: string, foundLabel?: string): Check => ({ ruleId, evidence: foundLabel ? { foundLabel } : null }) as unknown as Check;
-const highlighted = (ruleId: string, foundLabel?: string) => previewFor(check(ruleId, foundLabel), docs, pack)?.rows.find((r) => r.hl);
+const docs = patchDoc(sample.errorDocuments, 'income_certificate', {
+  issueDate: '2025-02-01',
+  issuingAuthority: 'Tehsildar',
+});
+const check = (ruleId: string, foundLabel?: string): Check =>
+  ({ ruleId, evidence: foundLabel ? { foundLabel } : null }) as unknown as Check;
+const highlighted = (ruleId: string, foundLabel?: string) =>
+  previewFor(check(ruleId, foundLabel), docs, pack)?.rows.find((r) => r.hl);
 
 describe('previewFor: which field of which document an issue is about', () => {
   it('income financial year highlights the issue date (dd/mm/yyyy)', () => {

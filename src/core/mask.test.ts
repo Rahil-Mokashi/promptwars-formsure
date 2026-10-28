@@ -24,7 +24,11 @@ describe('maskDeep', () => {
 
 describe('describeError', () => {
   it('describes name, status and code, and never the provider message', () => {
-    const err = Object.assign(new Error('failed for 1234 5678 9012 Aarav Patil'), { name: 'FirebaseError', status: 429, code: 'ai/fetch-error' });
+    const err = Object.assign(new Error('failed for 1234 5678 9012 Aarav Patil'), {
+      name: 'FirebaseError',
+      status: 429,
+      code: 'ai/fetch-error',
+    });
     const text = describeError(err);
     expect(text).toBe('FirebaseError status 429 code ai/fetch-error');
     expect(text).not.toMatch(/Aarav|1234/);

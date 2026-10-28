@@ -72,3 +72,6 @@ export const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Key under which the limiter keeps call timestamps (numbers only) in sessionStorage. */
 export const LIMITER_STORAGE_KEY = 'formsure.limiter.v1';
+
+/** Bytes in a kilobyte, for showing file sizes. */
+export const BYTES_PER_KB = 1024;

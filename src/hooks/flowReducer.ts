@@ -1,4 +1,5 @@
 import { assertNever } from '../core/assertNever';
+import { omit } from '../core/object';
 import type { ApplicationForm, AuditReport, Lang, SampleResponse, SlotId } from '../core/types';
 
 /** The six screens, in the order of the design. */
@@ -8,10 +9,16 @@ export type Screen = 'landing' | 'scheme' | 'upload' | 'audit' | 'report' | 'rea
 export type FormErrors = Partial<Record<keyof ApplicationForm, string>>;
 
 /** Form before the applicant has typed anything. */
-export const EMPTY_FORM: ApplicationForm = { fullName: '', dateOfBirth: '', category: 'OBC', academicYear: '2025-26', applicationType: 'Fresh' };
+export const EMPTY_FORM: ApplicationForm = {
+  fullName: '',
+  dateOfBirth: '',
+  category: 'OBC',
+  academicYear: '2025-26',
+  applicationType: 'Fresh',
+};
 
 /** The scheme pack used until another is chosen. */
-export const DEFAULT_PACK = 'mahadbt-postmatric-obc';
+const DEFAULT_PACK = 'mahadbt-postmatric-obc';
 
 /** Shown when the form has invalid fields at the moment of running a check. */
 export const FORM_ERROR_NOTE = 'Check the highlighted fields, then run the check again.';
@@ -38,8 +45,17 @@ export interface FlowState {
 
 /** The state at the start, and after "Check another application". */
 export const initialFlowState: FlowState = {
-  screen: 'landing', lang: 'en', packId: DEFAULT_PACK, sample: null, form: EMPTY_FORM, files: {}, consent: false,
-  error: null, formErrors: {}, report: null, runId: 0,
+  screen: 'landing',
+  lang: 'en',
+  packId: DEFAULT_PACK,
+  sample: null,
+  form: EMPTY_FORM,
+  files: {},
+  consent: false,
+  error: null,
+  formErrors: {},
+  report: null,
+  runId: 0,
 };
 
 /** The stages of running a check. */
@@ -91,40 +107,63 @@ function runAudit(state: FlowState, run: RunStage): FlowState {
   }
 }
 
+/** One handler per action type; the mapped type makes a missing handler a compile-time error. */
+type Handlers = {
+  [T in FlowAction['type']]: (state: FlowState, action: Extract<FlowAction, { type: T }>) => FlowState;
+};
+
+/** What a fresh application starts with: no files, no consent, no errors. */
+const FRESH = { files: {}, consent: false, error: null, formErrors: {} } as const;
+
+const handlers: Handlers = {
+  NAVIGATE: (state, { screen }) => ({ ...state, screen, error: null }),
+  SELECT_SAMPLE: (state, { sample }) => ({
+    ...state,
+    ...FRESH,
+    packId: DEFAULT_PACK,
+    sample,
+    form: sample.form,
+    screen: 'scheme',
+  }),
+  SELECT_LIVE: (state) => ({
+    ...state,
+    ...FRESH,
+    packId: DEFAULT_PACK,
+    sample: null,
+    form: EMPTY_FORM,
+    report: null,
+    screen: 'scheme',
+  }),
+  SELECT_PACK: (state, { packId, categories }) => {
+    if (state.sample) return state; // the sample applicant belongs to the OBC scheme
+    const keep = categories.includes(state.form.category);
+    const category = keep ? state.form.category : (categories[0] ?? state.form.category);
+    return {
+      ...state,
+      packId,
+      form: { ...state.form, category },
+      files: {},
+      report: null,
+      error: null,
+      formErrors: {},
+    };
+  },
+  SET_FILE: (state, { slotId, file }) => {
+    const others = omit(state.files, slotId);
+    return { ...state, files: file ? { ...others, [slotId]: file } : others, error: null };
+  },
+  FILE_REJECTED: (state, { message }) => ({ ...state, error: message }),
+  RUN_AUDIT: (state, { run }) => runAudit(state, run),
+  RECHECK: (state, { report }) => ({ ...state, report, error: null, screen: isClean(report) ? 'ready' : 'report' }),
+  SET_FORM: (state, { form }) => ({ ...state, form }),
+  SET_LANG: (state, { lang }) => ({ ...state, lang }),
+  SET_CONSENT: (state, { consent }) => ({ ...state, consent }),
+  RESTART: (state) => ({ ...initialFlowState, lang: state.lang, runId: state.runId }),
+};
+
 /** The app's state machine as a pure function: the same state and action always give the same next state. */
 export function flowReducer(state: FlowState, action: FlowAction): FlowState {
-  switch (action.type) {
-    case 'NAVIGATE':
-      return { ...state, screen: action.screen, error: null };
-    case 'SELECT_SAMPLE':
-      return { ...state, packId: DEFAULT_PACK, sample: action.sample, form: action.sample.form, files: {}, consent: false, error: null, formErrors: {}, screen: 'scheme' };
-    case 'SELECT_LIVE':
-      return { ...state, packId: DEFAULT_PACK, sample: null, form: EMPTY_FORM, files: {}, consent: false, error: null, formErrors: {}, report: null, screen: 'scheme' };
-    case 'SELECT_PACK': {
-      if (state.sample) return state; // the sample applicant belongs to the OBC scheme
-      const category = action.categories.includes(state.form.category) ? state.form.category : (action.categories[0] ?? state.form.category);
-      return { ...state, packId: action.packId, form: { ...state.form, category }, files: {}, report: null, error: null, formErrors: {} };
-    }
-    case 'SET_FILE': {
-      const { [action.slotId]: _replaced, ...others } = state.files;
-      void _replaced;
-      return { ...state, files: action.file ? { ...others, [action.slotId]: action.file } : others, error: null };
-    }
-    case 'FILE_REJECTED':
-      return { ...state, error: action.message };
-    case 'RUN_AUDIT':
-      return runAudit(state, action.run);
-    case 'RECHECK':
-      return { ...state, report: action.report, error: null, screen: isClean(action.report) ? 'ready' : 'report' };
-    case 'SET_FORM':
-      return { ...state, form: action.form };
-    case 'SET_LANG':
-      return { ...state, lang: action.lang };
-    case 'SET_CONSENT':
-      return { ...state, consent: action.consent };
-    case 'RESTART':
-      return { ...initialFlowState, lang: state.lang, runId: state.runId };
-    default:
-      return assertNever(action);
-  }
+  if (!Object.hasOwn(handlers, action.type)) return assertNever(action as never);
+  const handler = handlers[action.type] as (state: FlowState, action: FlowAction) => FlowState;
+  return handler(state, action);
 }

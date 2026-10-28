@@ -1,7 +1,7 @@
 import type { Check, DocumentsBySlot, ExtractedDocument, SchemePack, SlotDef } from './types';
 
 /** One labelled value on the mini document; `hl` marks the problem field. */
-export interface PreviewRow {
+interface PreviewRow {
   label: string;
   value: string;
   hl?: boolean;
@@ -53,7 +53,10 @@ export function previewFor(check: Check, docs: DocumentsBySlot, pack: SchemePack
         : null;
     }
     case 'dob-match':
-      return make('aadhaar', (d) => [{ label: 'Date of birth', value: d.dateOfBirth ? dayMonthYear(d.dateOfBirth) : '-', hl: true }, name(d)]);
+      return make('aadhaar', (d) => [
+        { label: 'Date of birth', value: d.dateOfBirth ? dayMonthYear(d.dateOfBirth) : '-', hl: true },
+        name(d),
+      ]);
     case 'category-match':
       return make('caste_certificate', (d) => [{ label: 'Category', value: d.category ?? '-', hl: true }, name(d)]);
     default:

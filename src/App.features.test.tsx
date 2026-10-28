@@ -19,7 +19,11 @@ describe('landing', () => {
   it('shows the stats strip', () => {
     render(<App />);
     const strip = screen.getByRole('list', { name: /at a glance/i });
-    expect(within(strip).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['8 checks', '3 languages', '0 files stored']);
+    expect(
+      within(strip)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(['8 checks', '3 languages', '0 files stored']);
   });
 });
 
@@ -53,7 +57,11 @@ describe('multi-scheme selection', () => {
     await user.click(scCard);
     expect(scCard).toHaveAttribute('aria-pressed', 'true');
     const catSelect = screen.getByLabelText('Category');
-    expect(within(catSelect).getAllByRole('option').map((o) => o.textContent)).toEqual(['SC']);
+    expect(
+      within(catSelect)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['SC']);
   });
 
   it('locks other scheme cards in sample mode', async () => {

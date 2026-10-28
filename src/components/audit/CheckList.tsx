@@ -8,25 +8,50 @@ const SHAKE_PX = 4;
 type RowState = Check['status'] | 'running' | 'pending';
 
 const SPOKEN: Record<RowState, string> = {
-  pass: ' Passed.', fail: ' Needs fixing.', needs_review: ' Couldn’t verify, check manually.', not_evaluated: ' Not evaluated.', running: '', pending: '',
+  pass: ' Passed.',
+  fail: ' Needs fixing.',
+  needs_review: ' Couldn’t verify, check manually.',
+  not_evaluated: ' Not evaluated.',
+  running: '',
+  pending: '',
 };
 
 function StatusIcon({ state, reduce }: { state: RowState; reduce: boolean }) {
   switch (state) {
     case 'pass':
-      return <span className="cicon ci-pass"><Tick reduce={reduce} /></span>;
+      return (
+        <span className="cicon ci-pass">
+          <Tick reduce={reduce} />
+        </span>
+      );
     case 'fail':
       return (
-        <m.span className="cicon ci-fail" animate={reduce ? undefined : { x: [0, -SHAKE_PX, SHAKE_PX, 0] }} transition={{ duration: SHAKE_S }}>
+        <m.span
+          className="cicon ci-fail"
+          animate={reduce ? undefined : { x: [0, -SHAKE_PX, SHAKE_PX, 0] }}
+          transition={{ duration: SHAKE_S }}
+        >
           <XIcon size={14} />
         </m.span>
       );
     case 'needs_review':
-      return <span className="cicon ci-review"><QuestionIcon size={14} /></span>;
+      return (
+        <span className="cicon ci-review">
+          <QuestionIcon size={14} />
+        </span>
+      );
     case 'not_evaluated':
-      return <span className="cicon ci-skip"><DashIcon size={14} /></span>;
+      return (
+        <span className="cicon ci-skip">
+          <DashIcon size={14} />
+        </span>
+      );
     case 'running':
-      return <span className="cicon ci-run"><Spinner reduce={reduce} /></span>;
+      return (
+        <span className="cicon ci-run">
+          <Spinner reduce={reduce} />
+        </span>
+      );
     case 'pending':
       return <span className="cicon ci-pend" />;
   }
@@ -49,9 +74,13 @@ export function CheckList({ report, step, progress, reduce }: CheckListProps) {
       <ul className="checks">
         {!report && (
           <li className="check running">
-            <span className="cicon ci-run"><Spinner reduce={reduce} /></span>
+            <span className="cicon ci-run">
+              <Spinner reduce={reduce} />
+            </span>
             <div>
-              <div className="clabel">{progress ? `Reading ${progress.index} of ${progress.total}…` : 'Reading your documents'}</div>
+              <div className="clabel">
+                {progress ? `Reading ${progress.index} of ${progress.total}…` : 'Reading your documents'}
+              </div>
               <div className="cdetail">{progress ? progress.detail : 'Checking…'}</div>
             </div>
           </li>
@@ -68,7 +97,9 @@ export function CheckList({ report, step, progress, reduce }: CheckListProps) {
                   {c.advisory && <span className="ctag">Advisory</span>}
                   <span className="sr-only">{SPOKEN[state]}</span>
                 </div>
-                <div className="cdetail">{state === 'pending' ? 'Waiting' : state === 'running' ? 'Checking…' : c.detail}</div>
+                <div className="cdetail">
+                  {state === 'pending' ? 'Waiting' : state === 'running' ? 'Checking…' : c.detail}
+                </div>
               </div>
             </li>
           );

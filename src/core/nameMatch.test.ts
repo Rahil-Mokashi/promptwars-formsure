@@ -4,7 +4,7 @@ import { compareNames, nameTokens } from './nameMatch';
 
 describe('nameTokens: normalisation (the original name is never changed)', () => {
   it('lower-cases, collapses spaces and strips dots, commas, apostrophes and hyphens', () => {
-    expect(nameTokens("  AARAV   S. Patil, ")).toEqual(['aarav', 's', 'patil']);
+    expect(nameTokens('  AARAV   S. Patil, ')).toEqual(['aarav', 's', 'patil']);
     expect(nameTokens("O'Neil-Smith")).toEqual(['o', 'neil', 'smith']);
   });
   it('uses Unicode NFC so composed and decomposed forms are the same', () => {
@@ -53,25 +53,41 @@ describe('name rule across every required document', () => {
     }
   });
   it('a clearly wrong name on any one document fails, even if others are unreadable', () => {
-    const docs = patchDoc(patchDoc(fixed, 'bonafide', { applicantName: { original: 'Rohan Patil', english: 'Rohan Patil' } }), 'domicile', { applicantName: null });
+    const docs = patchDoc(
+      patchDoc(fixed, 'bonafide', { applicantName: { original: 'Rohan Patil', english: 'Rohan Patil' } }),
+      'domicile',
+      { applicantName: null },
+    );
     expect(statusOf(docs, 'name-match')).toBe('fail');
     expect(checkOf(audit(docs), 'name-match').evidence?.document).toBe('Bonafide');
   });
   it('swapped order or initials on a document needs review and keeps the original value in the evidence', () => {
-    const swapped = patchDoc(fixed, 'marksheet', { applicantName: { original: 'Patil Aarav Sunil', english: 'Patil Aarav Sunil' } });
+    const swapped = patchDoc(fixed, 'marksheet', {
+      applicantName: { original: 'Patil Aarav Sunil', english: 'Patil Aarav Sunil' },
+    });
     const result = checkOf(audit(swapped), 'name-match');
     expect(result.status).toBe('needs_review');
-    expect(result.evidence).toMatchObject({ document: 'Marksheet', found: 'Patil Aarav Sunil', needed: sample.form.fullName });
+    expect(result.evidence).toMatchObject({
+      document: 'Marksheet',
+      found: 'Patil Aarav Sunil',
+      needed: sample.form.fullName,
+    });
   });
   it('a Devanagari document passes on the phonetic key of its transliteration', () => {
-    const docs = patchDoc(fixed, 'income_certificate', { applicantName: { original: 'आरव सुनील पाटील', english: 'Arav Sunil Patil' } });
+    const docs = patchDoc(fixed, 'income_certificate', {
+      applicantName: { original: 'आरव सुनील पाटील', english: 'Arav Sunil Patil' },
+    });
     expect(statusOf(docs, 'name-match')).toBe('pass');
   });
   it('an English document with the same transliteration difference fails', () => {
-    const docs = patchDoc(fixed, 'marksheet', { applicantName: { original: 'Arav Sunil Patil', english: 'Arav Sunil Patil' } });
+    const docs = patchDoc(fixed, 'marksheet', {
+      applicantName: { original: 'Arav Sunil Patil', english: 'Arav Sunil Patil' },
+    });
     expect(statusOf(docs, 'name-match')).toBe('fail');
   });
   it('an empty English name is treated as unreadable', () => {
-    expect(statusOf(patchDoc(fixed, 'aadhaar', { applicantName: { original: '', english: '  ' } }), 'name-match')).toBe('needs_review');
+    expect(statusOf(patchDoc(fixed, 'aadhaar', { applicantName: { original: '', english: '  ' } }), 'name-match')).toBe(
+      'needs_review',
+    );
   });
 });

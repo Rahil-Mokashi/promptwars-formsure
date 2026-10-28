@@ -8,7 +8,9 @@ afterEach(cleanup);
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({
-    matches: query.includes('prefers-reduced-motion') && (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ === true,
+    matches:
+      query.includes('prefers-reduced-motion') &&
+      (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ === true,
     media: query,
     addEventListener: () => undefined,
     removeEventListener: () => undefined,
@@ -31,9 +33,11 @@ import { imageHeader } from './test/files';
 Object.defineProperty(globalThis, 'createImageBitmap', {
   configurable: true,
   writable: true,
-  value: async () => ({ width: 100, height: 100, close: () => undefined }),
+  value: () => Promise.resolve({ width: 100, height: 100, close: () => undefined }),
 });
-HTMLCanvasElement.prototype.getContext = (() => ({ drawImage: () => undefined })) as unknown as HTMLCanvasElement['getContext'];
+HTMLCanvasElement.prototype.getContext = (() => ({
+  drawImage: () => undefined,
+})) as unknown as HTMLCanvasElement['getContext'];
 HTMLCanvasElement.prototype.toBlob = function (callback: BlobCallback, type?: string) {
   callback(new Blob([imageHeader(type ?? 'image/png')], { type }));
 };

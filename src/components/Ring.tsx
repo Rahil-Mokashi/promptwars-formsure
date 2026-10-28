@@ -16,7 +16,7 @@ const GRADIENT = {
 } as const;
 
 /** How many checks passed, failed and could not be verified; read out by screen readers. */
-export interface RingCounts {
+interface RingCounts {
   passed: number;
   failed: number;
   needsReview: number;
@@ -49,7 +49,11 @@ export function Ring({ pct, counts }: RingProps) {
         </defs>
         <circle className="ring-bg" cx="66" cy="66" r="54" />
         <m.circle
-          className="ring-fg" cx="66" cy="66" r="54" stroke={`url(#${gradientId})`}
+          className="ring-fg"
+          cx="66"
+          cy="66"
+          r="54"
+          stroke={`url(#${gradientId})`}
           initial={reduce ? false : { strokeDashoffset: CIRCUMFERENCE }}
           animate={{ strokeDashoffset: CIRCUMFERENCE * (1 - pct / FULL) }}
           transition={{ duration: reduce ? 0 : DRAW_S, ease: EASE }}

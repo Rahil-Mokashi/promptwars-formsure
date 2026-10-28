@@ -12,15 +12,22 @@ export function documentCheck(_rule: RuleOf<'document_check'>, ctx: RuleContext)
   if (present.length === 0) return notEvaluated('No documents to check');
 
   const unreadable = present.find(({ doc }) => !doc.legible);
-  const wrong = present.find(({ slot, doc }) => doc.legible && doc.documentTypes.length > 0 && !doc.documentTypes.some((t) => slot.accepts.includes(t)));
+  const wrong = present.find(
+    ({ slot, doc }) =>
+      doc.legible && doc.documentTypes.length > 0 && !doc.documentTypes.some((t) => slot.accepts.includes(t)),
+  );
   if (wrong) {
     const { slot, doc } = wrong;
     return {
       status: 'fail',
       detail: `${slot.short} slot has the wrong file`,
       evidence: {
-        document: slot.short, field: 'documentTypes', foundLabel: 'Found in file',
-        found: doc.documentTypes.join(', ').replace(/_/g, ' '), neededLabel: 'Needed', needed: slot.label.en,
+        document: slot.short,
+        field: 'documentTypes',
+        foundLabel: 'Found in file',
+        found: doc.documentTypes.join(', ').replace(/_/g, ' '),
+        neededLabel: 'Needed',
+        needed: slot.label.en,
       },
     };
   }
@@ -29,8 +36,12 @@ export function documentCheck(_rule: RuleOf<'document_check'>, ctx: RuleContext)
   if (review) {
     const found = unreadable ? 'Not legible' : 'No document type recognised';
     return needsReview(`${review.slot.short}: ${found.toLowerCase()}`, {
-      document: review.slot.short, field: unreadable ? 'legible' : 'documentTypes', foundLabel: 'Found in file',
-      found, neededLabel: 'Needed', needed: review.slot.label.en,
+      document: review.slot.short,
+      field: unreadable ? 'legible' : 'documentTypes',
+      foundLabel: 'Found in file',
+      found,
+      neededLabel: 'Needed',
+      needed: review.slot.label.en,
     });
   }
   return { status: 'pass', detail: 'Each file matches its slot' };

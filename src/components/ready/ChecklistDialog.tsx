@@ -23,7 +23,9 @@ function downloadText(report: AuditReport, form: ApplicationForm): void {
   link.click();
   link.remove();
   // Revoke after the click has been handled; revoking at once cancels the download in some browsers.
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 0);
 }
 
 /** Props of {@link ChecklistDialog}. */
@@ -40,27 +42,53 @@ export function ChecklistDialog({ report, form, onClose }: ChecklistDialogProps)
       <div className="checklist">
         <h3>FormSure checklist · {form.fullName}</h3>
         <p className="pdesc" style={{ margin: 0 }}>
-          Category {form.category} · Date of birth {form.dateOfBirth.split('-').reverse().join('/')} · Readiness {report.readiness}% · {new Date().toLocaleDateString('en-IN')}
+          Category {form.category} · Date of birth {form.dateOfBirth.split('-').reverse().join('/')} · Readiness{' '}
+          {report.readiness}% · {new Date().toLocaleDateString('en-IN')}
         </p>
         <ul>
           {report.checks.map((c) => (
             <li key={c.ruleId}>
-              <span className="box" aria-hidden="true">{c.status === 'pass' ? '✓' : c.status === 'needs_review' ? '?' : ''}</span>
+              <span className="box" aria-hidden="true">
+                {c.status === 'pass' ? '✓' : c.status === 'needs_review' ? '?' : ''}
+              </span>
               <span>
-                <b>{c.label}{c.advisory && ' (advisory, not scored)'}</b>
+                <b>
+                  {c.label}
+                  {c.advisory && ' (advisory, not scored)'}
+                </b>
                 <br />
                 <span style={{ color: '#5B6478' }}>
-                  {c.status === 'not_evaluated' ? `Not evaluated: ${c.detail}` : c.status === 'needs_review' ? `Couldn’t verify, check manually: ${c.detail}` : c.detail}
+                  {c.status === 'not_evaluated'
+                    ? `Not evaluated: ${c.detail}`
+                    : c.status === 'needs_review'
+                      ? `Couldn’t verify, check manually: ${c.detail}`
+                      : c.detail}
                 </span>
               </span>
             </li>
           ))}
         </ul>
-        <p className="disclaimer" style={{ marginTop: 8 }}>{PRECHECK_DISCLAIMER}</p>
+        <p className="disclaimer" style={{ marginTop: 8 }}>
+          {PRECHECK_DISCLAIMER}
+        </p>
       </div>
       <div className="row noprint" style={{ marginTop: 18 }}>
-        <button className="btn btn-primary" onClick={() => window.print()}>Print or save as PDF</button>
-        <button className="btn btn-ghost" onClick={() => downloadText(report, form)}>Download as text</button>
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            window.print();
+          }}
+        >
+          Print or save as PDF
+        </button>
+        <button
+          className="btn btn-ghost"
+          onClick={() => {
+            downloadText(report, form);
+          }}
+        >
+          Download as text
+        </button>
       </div>
     </Modal>
   );

@@ -13,7 +13,8 @@ beforeAll(() => {
 });
 
 const click = (user: User, name: RegExp | string) => user.click(screen.getByRole('button', { name }));
-const clickWhenReady = async (user: User, name: RegExp | string) => user.click(await screen.findByRole('button', { name }));
+const clickWhenReady = async (user: User, name: RegExp | string) =>
+  user.click(await screen.findByRole('button', { name }));
 
 describe('axe: no accessibility violations on any screen', () => {
   it('landing', async () => {

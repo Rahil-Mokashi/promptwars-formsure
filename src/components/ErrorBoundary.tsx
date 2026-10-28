@@ -27,9 +27,17 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
           <div className="card errbox" role="alert">
             <h1 className="h2">Something went wrong</h1>
             <p className="sub" style={{ margin: '12px auto 24px' }}>
-              FormSure hit an unexpected problem. Nothing was saved or sent anywhere. Reload the page and try again; the sample applicant always works.
+              FormSure hit an unexpected problem. Nothing was saved or sent anywhere. Reload the page and try again; the
+              sample applicant always works.
             </p>
-            <button className="btn btn-primary" onClick={() => window.location.reload()}>Reload FormSure</button>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                window.location.reload();
+              }}
+            >
+              Reload FormSure
+            </button>
           </div>
         </main>
       </div>

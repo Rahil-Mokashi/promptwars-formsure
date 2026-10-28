@@ -34,8 +34,12 @@ export function JsonPanel({ doc, active, reduce }: JsonPanelProps) {
   const lines = doc ? jsonLines(doc) : [];
   useEffect(() => {
     if (reduce || !active || !doc) return;
-    const timer = setInterval(() => setShown((n) => n + 1), LINE_REVEAL_MS);
-    return () => clearInterval(timer);
+    const timer = setInterval(() => {
+      setShown((n) => n + 1);
+    }, LINE_REVEAL_MS);
+    return () => {
+      clearInterval(timer);
+    };
   }, [reduce, active, doc]);
   const count = reduce || !active ? lines.length : Math.min(lines.length, shown);
 

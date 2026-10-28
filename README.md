@@ -2,29 +2,49 @@
 
 **Check your MahaDBT scholarship application before you submit: Gemini reads your documents, plain rules decide, and you see exactly what to fix, in English, Marathi or Hindi.**
 
-**Live:** https://formsure-de6fa.web.app  (Firebase Hosting, free Spark plan)  ·  Hackathon track: Education & Student Life
+**Live:** https://formsure-de6fa.web.app (Firebase Hosting, free Spark plan) · Hackathon track: Education & Student Life
 
-> **Gemini reads, code decides.** The AI only turns a scan into structured JSON. Every pass/fail verdict comes from a deterministic rules engine that runs in your browser against a versioned *scheme pack*, so each verdict is explainable and links to its source.
+> **Gemini reads, code decides.** The AI only turns a scan into structured JSON. Every pass/fail verdict comes from a deterministic rules engine that runs in your browser against a versioned _scheme pack_, so each verdict is explainable and links to its source.
+
+## In five lines
+
+1. **Problem:** a MahaDBT scholarship application is rejected for mistakes that are easy to prevent and hard to see.
+2. **Users:** students (first-generation, on a phone, more at home in Marathi or Hindi) and the college desk staff who verify them.
+3. **Track:** Education & Student Life.
+4. **What FormSure checks:** the right document in each slot, income certificate year, income + non-creamy-layer in one PDF, and names across documents, before you submit.
+5. **Live:** https://formsure-de6fa.web.app
+
+### Problem → feature
+
+| What goes wrong                                   | What FormSure does                                                           | Rule id                           |
+| ------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------- |
+| Income certificate is from the previous year      | Compares its issue date with the current Indian financial year (IST)         | `income-financial-year`           |
+| Non-creamy-layer page missing from the income PDF | Looks for both certificates in the one income file                           | `income-ncl`                      |
+| Name spelt differently in Marathi and English     | Matches names across documents (phonetic key for Devanagari)                 | `name-match`                      |
+| Wrong document in a slot                          | Checks that the file is the kind of document the slot accepts                | `right-document`                  |
+| Unreadable scan                                   | The file is marked `legible: false`, so it is sent to review, not guessed at | `right-document` (`needs_review`) |
+
+Each rule is scored only to the extent its evidence allows: see [RULES.md](RULES.md) for its status (`verified`, `conflicting` or `pending`). The code layout is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Screenshots
 
 Sample applicant "Aarav Sunil Patil" (fictional). All screenshots are from the built app.
 
-| Landing | Scheme picker | Upload |
-|---|---|---|
+| Landing                                     | Scheme picker                                    | Upload                                    |
+| ------------------------------------------- | ------------------------------------------------ | ----------------------------------------- |
 | ![Landing](docs/screenshots/01-landing.png) | ![Scheme picker](docs/screenshots/02-scheme.png) | ![Upload](docs/screenshots/03-upload.png) |
 
-| Live audit | Readiness report | Ready (100 %) |
-|---|---|---|
+| Live audit                                   | Readiness report                          | Ready (100 %)                           |
+| -------------------------------------------- | ----------------------------------------- | --------------------------------------- |
 | ![Live audit](docs/screenshots/04-audit.png) | ![Report](docs/screenshots/05-report.png) | ![Ready](docs/screenshots/06-ready.png) |
 
-| Printable checklist | Phone: landing | Phone: scheme picker |
-|---|---|---|
+| Printable checklist                             | Phone: landing                                    | Phone: scheme picker                            |
+| ----------------------------------------------- | ------------------------------------------------- | ----------------------------------------------- |
 | ![Checklist](docs/screenshots/07-checklist.png) | ![Phone landing](docs/screenshots/m1-landing.png) | ![Phone scheme](docs/screenshots/m2-scheme.png) |
 
 ## The problem
 
-A MahaDBT application can be sent back for a mistake that is easy to prevent but hard to see: an income certificate from the previous financial year, a non-creamy-layer certificate missing from the income PDF, or a name spelt *Arav* on one document and *Aarav* on another. The student usually learns this only after submission, with a generic rejection, and has to wait for the next window.
+A MahaDBT application can be sent back for a mistake that is easy to prevent but hard to see: an income certificate from the previous financial year, a non-creamy-layer certificate missing from the income PDF, or a name spelt _Arav_ on one document and _Aarav_ on another. The student usually learns this only after submission, with a generic rejection, and has to wait for the next window.
 
 The rules FormSure checks come from public guides and a college notice, not from an official machine-readable spec:
 
@@ -63,7 +83,7 @@ flowchart LR
 4. The rules engine runs over the extracted JSON. `readiness = passed ÷ applied checks × 100`; skipped rules are not counted.
 5. The report shows each issue with the evidence found, why it matters, the fix in the chosen language, a mini preview of the document with the problem field highlighted, and a link to the source of the rule.
 
-**Try sample applicant** runs the same engine on fictional data with no network and no Firebase config: **50 %** with 1 scored issue (income + non-creamy layer merged PDF) plus 2 advisory warnings (an income certificate from last financial year, and a marksheet that says *Arav* where the form says *Aarav*), then **100 %** with 7 of 8 checks green after "I've fixed these, re-check" (under evidence-gated rules where only verified rules with official or college-notice evidence are evaluated).
+**Try sample applicant** runs the same engine on fictional data with no network and no Firebase config: **50 %** with 1 scored issue (income + non-creamy layer merged PDF) plus 2 advisory warnings (an income certificate from last financial year, and a marksheet that says _Arav_ where the form says _Aarav_), then **100 %** with 7 of 8 checks green after "I've fixed these, re-check" (under evidence-gated rules where only verified rules with official or college-notice evidence are evaluated).
 
 ## The 8 rules
 
@@ -71,24 +91,24 @@ Each rule carries a register status:
 
 - **`verified`** (official source or college notice): applied and **scored**.
 - **`pending`** (secondary sources only): still run, but as an **advisory warning**. The student sees the result ("Check manually: name on marksheet"), but it never changes the readiness score or the pass/fail totals.
-- **`conflicting`** (sources disagree): run as an **advisory warning** too when the sources disagree only on details. A conflicting numeric limit (the OBC income limit: ₹1.5 L vs ₹2.5 L vs ₹8 L) is **skipped** and shown as *not evaluated*, because the threshold itself is unknown. This table matches the shipped JSON packs exactly (`npm run rules:register` regenerates [RULES.md](RULES.md) from them).
+- **`conflicting`** (sources disagree): run as an **advisory warning** too when the sources disagree only on details. A conflicting numeric limit (the OBC income limit: ₹1.5 L vs ₹2.5 L vs ₹8 L) is **skipped** and shown as _not evaluated_, because the threshold itself is unknown. This table matches the shipped JSON packs exactly (`npm run rules:register` regenerates [RULES.md](RULES.md) from them).
 
-| # | Rule | Checked by | OBC pack | SC pack |
-|---|------|------------|----------|---------|
-| 1 | Required documents present | Code | conflicting: advisory | conflicting: advisory |
-| 2 | Right document in each slot | AI reads, code decides | **verified: scored** | pending: advisory |
-| 3 | Income certificate issued in the current Indian financial year (1 Apr – 31 Mar, IST) | Code | conflicting: advisory | conflicting: advisory |
-| 4 | OBC / SBC / VJNT: income slot holds income certificate **and** non-creamy layer | AI reads, code decides | **verified: scored** | n/a |
-| 5 | Name matches the form across Aadhaar, income certificate, marksheet | AI reads, code decides | pending: advisory | pending: advisory |
-| 6 | Date of birth matches Aadhaar | Code | pending: advisory | pending: advisory |
-| 7 | Category matches caste certificate | Code | pending: advisory | pending: advisory |
-| 8 | Family income within limit | Code | conflicting: skipped | **verified: scored** (₹2,50,000) |
+| #   | Rule                                                                                 | Checked by             | OBC pack              | SC pack                          |
+| --- | ------------------------------------------------------------------------------------ | ---------------------- | --------------------- | -------------------------------- |
+| 1   | Required documents present                                                           | Code                   | conflicting: advisory | conflicting: advisory            |
+| 2   | Right document in each slot                                                          | AI reads, code decides | **verified: scored**  | pending: advisory                |
+| 3   | Income certificate issued in the current Indian financial year (1 Apr – 31 Mar, IST) | Code                   | conflicting: advisory | conflicting: advisory            |
+| 4   | OBC / SBC / VJNT: income slot holds income certificate **and** non-creamy layer      | AI reads, code decides | **verified: scored**  | n/a                              |
+| 5   | Name matches the form across Aadhaar, income certificate, marksheet                  | AI reads, code decides | pending: advisory     | pending: advisory                |
+| 6   | Date of birth matches Aadhaar                                                        | Code                   | pending: advisory     | pending: advisory                |
+| 7   | Category matches caste certificate                                                   | Code                   | pending: advisory     | pending: advisory                |
+| 8   | Family income within limit                                                           | Code                   | conflicting: skipped  | **verified: scored** (₹2,50,000) |
 
 Every rule type is implemented and fully tested (`src/core/engine.test.ts` runs all of them with a test pack that marks them verified). Promoting a rule from advisory to scored is a data change, not a code change: set `status: "verified"` once an official source or college notice backs it.
 
 "AI reads, code decides" means Gemini supplies the extracted field (document types, transliterated name); the verdict is still computed by code.
 
-**Name matching (rule 5).** English documents must match the form exactly after normalising case and spaces. Marathi and Hindi documents compare a phonetic key (`aa→a`, `ee→i`, `oo→u`, `w→v`) of Gemini's English transliteration. So *आरव → Aarav* passes against *Aarav* on the Marathi income certificate, while an English marksheet that says *Arav* fails.
+**Name matching (rule 5).** English documents must match the form exactly after normalising case and spaces. Marathi and Hindi documents compare a phonetic key (`aa→a`, `ee→i`, `oo→u`, `w→v`) of Gemini's English transliteration. So _आरव → Aarav_ passes against _Aarav_ on the Marathi income certificate, while an English marksheet that says _Arav_ fails.
 
 ## Architecture
 
@@ -133,8 +153,8 @@ firebase.json       Hosting: public = dist, SPA rewrite, security headers
 
 ## Why AI is essential
 
-- **Reading scans.** Applicants upload phone photos and PDFs of Marathi, Hindi and English documents. Classical OCR plus hand-written parsers would need one template per issuing authority. Gemini reads the page, recognises which document(s) a PDF contains (an income certificate *and* a non-creamy-layer certificate in one file), and returns typed fields.
-- **Marathi → English name matching.** The same person is written *आरव सुनील पाटील* on a Tehsildar's certificate and *Aarav Sunil Patil* on the form. Comparing the English transliteration with a phonetic key lets the engine pass legitimate spelling variants of a Devanagari name and still catch a real mismatch.
+- **Reading scans.** Applicants upload phone photos and PDFs of Marathi, Hindi and English documents. Classical OCR plus hand-written parsers would need one template per issuing authority. Gemini reads the page, recognises which document(s) a PDF contains (an income certificate _and_ a non-creamy-layer certificate in one file), and returns typed fields.
+- **Marathi → English name matching.** The same person is written _आरव सुनील पाटील_ on a Tehsildar's certificate and _Aarav Sunil Patil_ on the form. Comparing the English transliteration with a phonetic key lets the engine pass legitimate spelling variants of a Devanagari name and still catch a real mismatch.
 - **Why not let the AI judge?** A model that decides "ready or not" cannot cite a source or be audited. Here the model never decides; code does, and each rule is tested.
 
 ## Scheme packs
@@ -191,10 +211,10 @@ Not done: a full screen-reader pass with NVDA / VoiceOver. axe catches structura
 
 `npm test` runs **270 unit and component tests in 28 files**. `npm run test:e2e` runs **Playwright** against the production build on desktop and a phone viewport: the whole sample flow, a real-browser **axe** scan (WCAG 2.1 AA, including colour contrast) on every screen, and a no-horizontal-scroll check at 390 px. (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
 
-| Coverage | Statements | Branches | Functions | Lines |
-|---|---|---|---|---|
-| `src/core` (rules engine, validation, masking, preview) | 99.6 % | 91.6 % | 100 % | 99.7 % |
-| Whole `src` | 95.5 % | 86.6 % | 94.5 % | 97.3 % |
+| Coverage                                                | Statements | Branches | Functions | Lines  |
+| ------------------------------------------------------- | ---------- | -------- | --------- | ------ |
+| `src/core` (rules engine, validation, masking, preview) | 99.6 %     | 91.6 %   | 100 %     | 99.7 % |
+| Whole `src`                                             | 95.5 %     | 86.6 %   | 94.5 %    | 97.3 % |
 
 What is covered:
 
@@ -225,13 +245,13 @@ npm run typecheck
 
 Vendor code is split so no chunk exceeds 500 KB (largest: 216 KB). The Firebase SDK is loaded only when someone uploads a file for live reading, so the sample flow never downloads it.
 
-| Chunk | Raw | Gzip | Loaded |
-|---|---|---|---|
-| `react` | 210.5 KB | 65.7 KB | on start |
-| `framer-motion` (`LazyMotion` + `domAnimation`, `m.*` components) | 96.5 KB | 34.4 KB | on start |
-| app (`index`, includes both scheme packs) | 215.5 KB | 58.9 KB | on start |
-| `firebase` (app + AI Logic + App Check) | 95.2 KB | 29.1 KB | lazy, live upload only |
-| CSS | 18.8 KB | 4.7 KB | on start |
+| Chunk                                                             | Raw      | Gzip    | Loaded                 |
+| ----------------------------------------------------------------- | -------- | ------- | ---------------------- |
+| `react`                                                           | 210.5 KB | 65.7 KB | on start               |
+| `framer-motion` (`LazyMotion` + `domAnimation`, `m.*` components) | 96.5 KB  | 34.4 KB | on start               |
+| app (`index`, includes both scheme packs)                         | 215.5 KB | 58.9 KB | on start               |
+| `firebase` (app + AI Logic + App Check)                           | 95.2 KB  | 29.1 KB | lazy, live upload only |
+| CSS                                                               | 18.8 KB  | 4.7 KB  | on start               |
 
 Initial JavaScript is about 523 KB raw / 159 KB gzip. `LazyMotion` cut the animation chunk by 40 %. I have not run Lighthouse or measured real-device load times.
 
@@ -272,7 +292,7 @@ The build tooling in this repository never deployed the site; the live link abov
 
 How the work was directed:
 
-1. **A fixed design as the contract.** A clickable prototype (`design/formsure-design.html`) was the visual and behavioural reference: port its CSS, copy and six screens exactly, replace the hard-coded data with real calls.
+1. **A fixed design as the contract.** A clickable prototype (an HTML design file, since removed from the repository) was the visual and behavioural reference: port its CSS, copy and six screens exactly, replace the hard-coded data with real calls.
 2. **Principle first.** "Gemini reads, code decides" was stated up front and shaped the architecture: a rules engine with sources, a `verified` flag, and AI output that is only ever data.
 3. **Explicit fixtures and numbers.** The brief fixed the sample applicant, its expected results (50 % with one issue, then 100 % after the fix) and the rule order, so tests could pin them.
 4. **Tests as gates.** Each part was committed only after lint, typecheck, tests and build passed.

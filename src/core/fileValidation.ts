@@ -1,4 +1,14 @@
-import { ALLOWED_MIME_TYPES, DOWNSCALE_ABOVE_PX, MAGIC_BYTES_LENGTH, MAX_FILES, MAX_FILE_BYTES, MAX_IMAGE_SIDE_PX, MAX_PDF_PAGES, MAX_TOTAL_BYTES, PDF_TAIL_BYTES } from './constants';
+import {
+  ALLOWED_MIME_TYPES,
+  DOWNSCALE_ABOVE_PX,
+  MAGIC_BYTES_LENGTH,
+  MAX_FILES,
+  MAX_FILE_BYTES,
+  MAX_IMAGE_SIDE_PX,
+  MAX_PDF_PAGES,
+  MAX_TOTAL_BYTES,
+  PDF_TAIL_BYTES,
+} from './constants';
 import { maskAadhaar } from './mask';
 
 /** The parts of a `File` that validation needs. */
@@ -19,19 +29,38 @@ const KIND_OF_MIME: Readonly<Record<string, FileKind>> = {
   'application/pdf': 'pdf',
 };
 
-const ascii = (bytes: Uint8Array, start: number, length: number): string =>
-  String.fromCharCode(...bytes.slice(start, start + length));
+/** Bytes that must appear at a given offset. */
+interface SignaturePart {
+  offset: number;
+  bytes: readonly number[];
+}
+
+const ascii = (text: string): number[] => Array.from(text, (c) => c.charCodeAt(0));
+
+/** The magic bytes of each accepted kind. WebP has two parts: "RIFF" at 0 and "WEBP" at 8. */
+const SIGNATURES: readonly { kind: FileKind; parts: readonly SignaturePart[] }[] = [
+  { kind: 'png', parts: [{ offset: 0, bytes: [0x89, ...ascii('PNG'), 0x0d, 0x0a, 0x1a, 0x0a] }] },
+  { kind: 'jpeg', parts: [{ offset: 0, bytes: [0xff, 0xd8, 0xff] }] },
+  {
+    kind: 'webp',
+    parts: [
+      { offset: 0, bytes: ascii('RIFF') },
+      { offset: 8, bytes: ascii('WEBP') },
+    ],
+  },
+  { kind: 'pdf', parts: [{ offset: 0, bytes: ascii('%PDF-') }] },
+];
+
+/** True when `bytes` holds every part of a signature at its offset (and is long enough to). */
+const hasParts = (bytes: Uint8Array, parts: readonly SignaturePart[]): boolean =>
+  parts.every(({ offset, bytes: expected }) => expected.every((byte, i) => bytes[offset + i] === byte));
 
 /**
  * Recognises PNG, JPEG, WebP and PDF by magic bytes (the first bytes of the file).
  * @returns the kind, or null when the content is none of them
  */
 export function detectFileKind(bytes: Uint8Array): FileKind | null {
-  if (bytes.length >= 8 && bytes[0] === 0x89 && ascii(bytes, 1, 3) === 'PNG' && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a) return 'png';
-  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'jpeg';
-  if (bytes.length >= 12 && ascii(bytes, 0, 4) === 'RIFF' && ascii(bytes, 8, 4) === 'WEBP') return 'webp';
-  if (bytes.length >= 5 && ascii(bytes, 0, 5) === '%PDF-') return 'pdf';
-  return null;
+  return SIGNATURES.find((signature) => hasParts(bytes, signature.parts))?.kind ?? null;
 }
 
 /** Quick checks that need no file content: type, emptiness and size. Returns an error message or null. */
@@ -46,8 +75,12 @@ export function validateFile(file: FileLike): string | null {
 const readHeader = (file: Blob): Promise<Uint8Array> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
-    reader.onerror = () => reject(new Error('Could not read the file'));
+    reader.onload = () => {
+      resolve(new Uint8Array(reader.result as ArrayBuffer));
+    };
+    reader.onerror = () => {
+      reject(new Error('Could not read the file'));
+    };
     reader.readAsArrayBuffer(file.slice(0, MAGIC_BYTES_LENGTH));
   });
 
@@ -96,8 +129,14 @@ export function inspectPdf(bytes: Uint8Array): PdfInspection {
   const text = latin1(bytes);
   const tail = text.slice(-PDF_TAIL_BYTES);
   const pageObjects = (text.match(/\/Type\s*\/Page(?![A-Za-z])/g) ?? []).length;
-  const counts = [...text.matchAll(/\/Type\s*\/Pages[^>]*?\/Count\s+(\d+)|\/Count\s+(\d+)[^>]*?\/Type\s*\/Pages/g)].map((m) => Number(m[1] ?? m[2]));
-  return { truncated: !tail.includes('%%EOF'), encrypted: /\/Encrypt\b/.test(text), pages: Math.max(pageObjects, ...counts, 0) };
+  const counts = [...text.matchAll(/\/Type\s*\/Pages[^>]*?\/Count\s+(\d+)|\/Count\s+(\d+)[^>]*?\/Type\s*\/Pages/g)].map(
+    (m) => Number(m[1] ?? m[2]),
+  );
+  return {
+    truncated: !tail.includes('%%EOF'),
+    encrypted: /\/Encrypt\b/.test(text),
+    pages: Math.max(pageObjects, ...counts, 0),
+  };
 }
 
 /** Message for a PDF that cannot be used, or null. */
@@ -112,7 +151,8 @@ export function pdfProblem(name: string, inspection: PdfInspection): string | nu
 /** Message for an image that is too large in pixels, or null. */
 export function imageSizeProblem(name: string, width: number, height: number): string | null {
   if (width <= 0 || height <= 0) return `${maskAadhaar(name)}: the image could not be read.`;
-  if (width > MAX_IMAGE_SIDE_PX || height > MAX_IMAGE_SIDE_PX) return `${maskAadhaar(name)}: the image is larger than ${MAX_IMAGE_SIDE_PX} × ${MAX_IMAGE_SIDE_PX} pixels.`;
+  if (width > MAX_IMAGE_SIDE_PX || height > MAX_IMAGE_SIDE_PX)
+    return `${maskAadhaar(name)}: the image is larger than ${MAX_IMAGE_SIDE_PX} × ${MAX_IMAGE_SIDE_PX} pixels.`;
   return null;
 }
 

@@ -21,10 +21,14 @@ describe('reduced-motion sample flow', () => {
     render(<App />);
     await toReport(user);
 
-    expect(await screen.findByRole('heading', { name: 'Pre-check complete — 1 passed, 1 need fixing, 0 couldn’t be verified.' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Pre-check complete — 1 passed, 1 need fixing, 0 couldn’t be verified.',
+      }),
+    ).toBeInTheDocument();
     // One scored failure plus two advisory warnings (income certificate year, marksheet name), shown but not scored.
     expect(screen.getAllByRole('article')).toHaveLength(3);
-    expect(screen.getAllByRole('article').filter((a) => a.textContent?.includes('Advisory'))).toHaveLength(2);
+    expect(screen.getAllByRole('article').filter((a) => a.textContent.includes('Advisory'))).toHaveLength(2);
     // Count-up is skipped: the final number is there immediately.
     expect(screen.getByText('50%')).toBeInTheDocument();
     expect(screen.getByText(/Not evaluated \(1\)/)).toBeInTheDocument();

@@ -10,13 +10,19 @@ import { clickRun } from './test/ui';
 
 // Firebase AI is mocked, and the 4 s gap between files is switched off for the test.
 const hoisted = vi.hoisted(() => ({ generate: vi.fn<(req: GenerateRequest) => Promise<string>>() }));
-vi.mock('./services/firebase', () => ({ createFirebaseGenerate: () => hoisted.generate, isLiveReadingAvailable: () => true }));
+vi.mock('./services/firebase', () => ({
+  createFirebaseGenerate: () => hoisted.generate,
+  isLiveReadingAvailable: () => true,
+}));
 // The shared 8-calls-a-minute limiter is covered in rateLimiter.test.ts; here it must not slow the tests down.
 vi.mock('./services/rateLimiter', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./services/rateLimiter')>()),
-  geminiLimiter: { acquire: async () => undefined },
+  geminiLimiter: { acquire: () => Promise.resolve(undefined) },
 }));
-vi.mock('./core/constants', async (importOriginal) => ({ ...(await importOriginal<typeof import('./core/constants')>()), READ_STAGGER_MS: 0 }));
+vi.mock('./core/constants', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./core/constants')>()),
+  READ_STAGGER_MS: 0,
+}));
 
 beforeAll(() => {
   (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ = true;
@@ -38,7 +44,9 @@ async function chooseThreeAndRun(user: User) {
   await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('a-aadhaar.pdf'));
   await user.upload(screen.getByLabelText(/OBC caste certificate/), pdfFile('b-caste.pdf'));
   await user.upload(screen.getByLabelText(/Income certificate \+ non-creamy layer/), pdfFile('c-income.pdf'));
-  await waitFor(() => expect(screen.getAllByText('Uploaded')).toHaveLength(3)); // file checks finish asynchronously
+  await waitFor(() => {
+    expect(screen.getAllByText('Uploaded')).toHaveLength(3);
+  }); // file checks finish asynchronously
   await clickRun(user);
 }
 
@@ -57,18 +65,26 @@ describe('live reading: two files at a time, with visible progress', () => {
     render(<App />);
     await chooseThreeAndRun(user);
 
-    await waitFor(() => expect(release).toHaveLength(2)); // two in flight; the third waits for a free slot
+    await waitFor(() => {
+      expect(release).toHaveLength(2);
+    }); // two in flight; the third waits for a free slot
     expect(hoisted.generate).toHaveBeenCalledTimes(2);
     expect(await screen.findByText('Reading 2 of 3…')).toBeInTheDocument(); // the most recently started
     const bar = screen.getByRole('progressbar', { name: 'Documents read' });
     expect(bar).toHaveAttribute('aria-valuemax', '3');
     expect(bar).toHaveAttribute('aria-valuenow', '1');
 
-    await act(async () => release.shift()?.()); // one finishes, so the third starts
+    act(() => {
+      release.shift()?.();
+    }); // one finishes, so the third starts
     expect(await screen.findByText('Reading 3 of 3…')).toBeInTheDocument();
-    await waitFor(() => expect(release).toHaveLength(2));
-    await act(async () => {
-      release.splice(0).forEach((r) => r());
+    await waitFor(() => {
+      expect(release).toHaveLength(2);
+    });
+    act(() => {
+      release.splice(0).forEach((r) => {
+        r();
+      });
     });
 
     expect(await screen.findByRole('button', { name: /see readiness report/i })).toBeInTheDocument();
@@ -128,7 +144,9 @@ describe('"Retry this file"', () => {
 
     hoisted.generate.mockResolvedValueOnce(MARKSHEET_JSON);
     await user.click(screen.getByRole('button', { name: /retry this file/i }));
-    await waitFor(() => expect(screen.queryByRole('button', { name: /retry this file/i })).toBeNull());
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /retry this file/i })).toBeNull();
+    });
     expect(hoisted.generate).toHaveBeenCalledTimes(4); // only the failed file
 
     // Running again reuses every cached document: no new Gemini calls.
@@ -140,24 +158,35 @@ describe('"Retry this file"', () => {
   it('shows the failure again, with a Retry button, when the retry also fails', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const user = userEvent.setup();
-    hoisted.generate.mockResolvedValueOnce(MARKSHEET_JSON).mockResolvedValueOnce('nope').mockResolvedValueOnce(MARKSHEET_JSON).mockResolvedValueOnce('still nope');
+    hoisted.generate
+      .mockResolvedValueOnce(MARKSHEET_JSON)
+      .mockResolvedValueOnce('nope')
+      .mockResolvedValueOnce(MARKSHEET_JSON)
+      .mockResolvedValueOnce('still nope');
     render(<App />);
     await chooseThreeAndRun(user);
     await screen.findByRole('alert');
     await user.click(screen.getByRole('button', { name: /retry this file/i }));
-    await waitFor(() => expect(hoisted.generate).toHaveBeenCalledTimes(4));
+    await waitFor(() => {
+      expect(hoisted.generate).toHaveBeenCalledTimes(4);
+    });
     expect(await screen.findByRole('button', { name: /retry this file/i })).toBeEnabled();
   });
 
   it('replacing a failed file clears its error and reads the new file next time', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const user = userEvent.setup();
-    hoisted.generate.mockResolvedValueOnce(MARKSHEET_JSON).mockResolvedValueOnce('nope').mockResolvedValueOnce(MARKSHEET_JSON);
+    hoisted.generate
+      .mockResolvedValueOnce(MARKSHEET_JSON)
+      .mockResolvedValueOnce('nope')
+      .mockResolvedValueOnce(MARKSHEET_JSON);
     render(<App />);
     await chooseThreeAndRun(user);
     await screen.findByRole('alert');
     await user.upload(screen.getByLabelText(/OBC caste certificate/), pdfFile('b-caste-v2.pdf'));
-    await waitFor(() => expect(screen.queryByRole('button', { name: /retry this file/i })).toBeNull()); // the file check is asynchronous
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /retry this file/i })).toBeNull();
+    }); // the file check is asynchronous
     hoisted.generate.mockResolvedValueOnce(MARKSHEET_JSON);
     await clickRun(user);
     expect(await screen.findByRole('button', { name: /see readiness report/i })).toBeInTheDocument();

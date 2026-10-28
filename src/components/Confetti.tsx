@@ -13,7 +13,15 @@ const SPEED_MIN = 11;
 const SPEED_RANGE = 9;
 
 interface Particle {
-  x: number; y: number; vx: number; vy: number; w: number; h: number; rot: number; vr: number; color: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  w: number;
+  h: number;
+  rot: number;
+  vr: number;
+  color: string;
 }
 
 const launch = (index: number, width: number, height: number): Particle => {
@@ -21,10 +29,14 @@ const launch = (index: number, width: number, height: number): Particle => {
   const angle = (ANGLES_DEG[side] ?? -90) * (Math.PI / 180) + (Math.random() - 0.5) * ANGLE_SPREAD;
   const speed = SPEED_MIN + Math.random() * SPEED_RANGE;
   return {
-    x: width * (CANNON_X[side] ?? 0.5), y: height * CANNON_Y,
-    vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-    w: 6 + Math.random() * 6, h: 10 + Math.random() * 8,
-    rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.4,
+    x: width * (CANNON_X[side] ?? 0.5),
+    y: height * CANNON_Y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    w: 6 + Math.random() * 6,
+    h: 10 + Math.random() * 8,
+    rot: Math.random() * Math.PI,
+    vr: (Math.random() - 0.5) * 0.4,
     color: COLORS[index % COLORS.length] ?? COLORS[0],
   };
 };
@@ -67,7 +79,9 @@ export function Confetti() {
       else ctx.clearRect(0, 0, W, H);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+    };
   }, []);
 
   return <canvas ref={ref} className="confetti-canvas" aria-hidden="true" />;

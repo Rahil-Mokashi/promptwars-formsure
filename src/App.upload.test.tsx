@@ -9,7 +9,10 @@ beforeAll(() => {
   (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ = true;
 });
 
-vi.mock('./services/firebase', async (importOriginal) => ({ ...(await importOriginal<typeof import('./services/firebase')>()), isLiveReadingAvailable: () => true }));
+vi.mock('./services/firebase', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./services/firebase')>()),
+  isLiveReadingAvailable: () => true,
+}));
 
 // applyAccept:false lets us push a wrong file type through, as the "All files" picker option would.
 const setup = () => userEvent.setup({ applyAccept: false });
@@ -105,7 +108,15 @@ describe('keyboard navigation', () => {
   it('reaches "Try sample applicant" with Tab and activates it with Enter', async () => {
     const user = setup();
     render(<App />);
-    for (let i = 0; i < 8 && !/try sample applicant/i.test(document.activeElement?.tagName === 'BUTTON' ? (document.activeElement.textContent ?? '') : ''); i++) await user.tab();
+    for (
+      let i = 0;
+      i < 8 &&
+      !/try sample applicant/i.test(
+        document.activeElement?.tagName === 'BUTTON' ? document.activeElement.textContent : '',
+      );
+      i++
+    )
+      await user.tab();
     expect(document.activeElement?.tagName).toBe('BUTTON');
     expect(document.activeElement).toHaveTextContent(/try sample applicant/i);
     await user.keyboard('{Enter}');
@@ -115,7 +126,12 @@ describe('keyboard navigation', () => {
   it('toggles a language with the Space key', async () => {
     const user = setup();
     render(<App />);
-    for (let i = 0; i < 8 && !(document.activeElement?.tagName === 'BUTTON' && document.activeElement.textContent === 'हिंदी'); i++) await user.tab();
+    for (
+      let i = 0;
+      i < 8 && !(document.activeElement?.tagName === 'BUTTON' && document.activeElement.textContent === 'हिंदी');
+      i++
+    )
+      await user.tab();
     expect(document.activeElement).toHaveTextContent('हिंदी');
     await user.keyboard(' ');
     expect(document.documentElement.lang).toBe('hi');
@@ -163,15 +179,23 @@ describe('upload security checks in the browser', () => {
     const user = setup();
     render(<App />);
     await toUpload(user);
-    await user.upload(screen.getByLabelText(/Aadhaar card/), new File(['<script>alert(1)</script>'], 'evil.pdf', { type: 'application/pdf' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('evil.pdf: the content is not a PNG, JPG, WebP or PDF file.');
+    await user.upload(
+      screen.getByLabelText(/Aadhaar card/),
+      new File(['<script>alert(1)</script>'], 'evil.pdf', { type: 'application/pdf' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'evil.pdf: the content is not a PNG, JPG, WebP or PDF file.',
+    );
   });
 
   it('masks a 12-digit number in a file name, both in errors and on the card', async () => {
     const user = setup();
     render(<App />);
     await toUpload(user);
-    await user.upload(screen.getByLabelText(/Aadhaar card/), new File(['x'], '1234 5678 9012.txt', { type: 'text/plain' }));
+    await user.upload(
+      screen.getByLabelText(/Aadhaar card/),
+      new File(['x'], '1234 5678 9012.txt', { type: 'text/plain' }),
+    );
     expect(await screen.findByRole('alert')).toHaveTextContent('XXXX XXXX 9012.txt');
     await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('1234 5678 9012.pdf'));
     expect(await screen.findByText('XXXX XXXX 9012.pdf')).toBeInTheDocument();
@@ -203,7 +227,9 @@ describe('form validation before a check runs', () => {
     const user = setup();
     render(<App />);
     await fill(user, 'Aarav Patil', '2099-01-01');
-    expect(screen.getByLabelText('Date of birth')).toHaveAccessibleDescription('The date of birth cannot be in the future.');
+    expect(screen.getByLabelText('Date of birth')).toHaveAccessibleDescription(
+      'The date of birth cannot be in the future.',
+    );
   });
 
   it('limits the name field to 100 characters', async () => {

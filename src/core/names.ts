@@ -1,5 +1,5 @@
 /** Lower-cases and collapses whitespace, so `"AARAV  patil "` equals `"aarav patil"`. */
-export const normaliseName = (name: string): string => name.toLowerCase().replace(/\s+/g, ' ').trim();
+const normaliseName = (name: string): string => name.toLowerCase().replace(/\s+/g, ' ').trim();
 
 /**
  * Phonetic key for the English transliteration of a Marathi or Hindi name:

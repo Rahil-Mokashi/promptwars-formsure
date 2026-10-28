@@ -10,8 +10,15 @@ afterEach(() => {
 describe('Confetti', () => {
   it('draws a burst on the canvas and stops', () => {
     const ctx = {
-      scale: vi.fn(), clearRect: vi.fn(), save: vi.fn(), restore: vi.fn(),
-      translate: vi.fn(), rotate: vi.fn(), fillRect: vi.fn(), globalAlpha: 1, fillStyle: '',
+      scale: vi.fn(),
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      translate: vi.fn(),
+      rotate: vi.fn(),
+      fillRect: vi.fn(),
+      globalAlpha: 1,
+      fillStyle: '',
     };
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as unknown as CanvasRenderingContext2D);
     let frames = 0;

@@ -4,14 +4,26 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { Modal } from './Modal';
 
-function Harness({ onClose = () => {} }: { onClose?: () => void }) {
+function Harness({ onClose = () => undefined }: { onClose?: () => void }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
-      <button onClick={() => setOpen(true)}>Open</button>
+      <button
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        Open
+      </button>
       <button>Behind</button>
       {open && (
-        <Modal title="Test dialog" onClose={() => { onClose(); setOpen(false); }}>
+        <Modal
+          title="Test dialog"
+          onClose={() => {
+            onClose();
+            setOpen(false);
+          }}
+        >
           <input aria-label="first field" />
           <button>Last</button>
         </Modal>

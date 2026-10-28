@@ -22,4 +22,8 @@ export const precheckSummary = (passed: number, failed: number, needsReview: num
   `Pre-check complete — ${passed} passed, ${failed} need fixing, ${needsReview} couldn’t be verified.`;
 
 /** Source kinds as shown to the user. */
-export const SOURCE_KIND_LABEL = { official: 'Official source', 'college-notice': 'College notice', secondary: 'Secondary source' } as const;
+export const SOURCE_KIND_LABEL = {
+  official: 'Official source',
+  'college-notice': 'College notice',
+  secondary: 'Secondary source',
+} as const;

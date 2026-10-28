@@ -5,7 +5,13 @@ import './schema';
 import type { ApplicationForm } from './types';
 
 const NOW = new Date('2026-10-28T06:00:00Z');
-const good: ApplicationForm = { fullName: 'Aarav Sunil Patil', dateOfBirth: '2006-03-14', category: 'OBC', academicYear: '2025-26', applicationType: 'Fresh' };
+const good: ApplicationForm = {
+  fullName: 'Aarav Sunil Patil',
+  dateOfBirth: '2006-03-14',
+  category: 'OBC',
+  academicYear: '2025-26',
+  applicationType: 'Fresh',
+};
 const errorsOf = (form: Partial<ApplicationForm>) => {
   const r = validateForm({ ...good, ...form }, NOW);
   return r.ok ? {} : r.errors;
@@ -44,7 +50,11 @@ describe('validateForm', () => {
     expect(errorsOf({ applicationType: 'Other' }).applicationType).toBe('Choose Fresh or Renewal.');
   });
   it('reports every invalid field at once', () => {
-    expect(Object.keys(errorsOf({ fullName: '', dateOfBirth: 'x', category: 'Z' })).sort()).toEqual(['category', 'dateOfBirth', 'fullName']);
+    expect(Object.keys(errorsOf({ fullName: '', dateOfBirth: 'x', category: 'Z' })).sort()).toEqual([
+      'category',
+      'dateOfBirth',
+      'fullName',
+    ]);
   });
 });
 

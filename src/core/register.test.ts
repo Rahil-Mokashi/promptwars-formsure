@@ -1,3 +1,4 @@
+import { must } from '../test/must';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -72,7 +73,9 @@ describe('packSchema refuses an untrustworthy pack', () => {
     const pack = clone();
     const rule = pack.rules[0];
     if (rule) rule.source = { label: 'x', url: 'https://example.org/other', kind: 'official' };
-    expect(JSON.stringify(packSchema.safeParse(pack).error?.issues)).toMatch(/source must be one of its evidence entries/);
+    expect(JSON.stringify(packSchema.safeParse(pack).error?.issues)).toMatch(
+      /source must be one of its evidence entries/,
+    );
   });
   it('rejects duplicate rule ids, a missing quote and a bad version', () => {
     const dup = clone();
@@ -80,7 +83,7 @@ describe('packSchema refuses an untrustworthy pack', () => {
     expect(packSchema.safeParse(dup).success).toBe(false);
     const noQuote = clone();
     const first = noQuote.rules[0];
-    if (first) first.evidence = [{ ...first.evidence[0]!, quote: '' }];
+    if (first) first.evidence = [{ ...must(first.evidence[0]), quote: '' }];
     expect(packSchema.safeParse(noQuote).success).toBe(false);
     const badVersion = clone();
     badVersion.version = 'one';

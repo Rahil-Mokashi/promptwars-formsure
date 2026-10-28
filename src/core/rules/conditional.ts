@@ -1,5 +1,14 @@
 import type { DocumentType } from '../types';
-import { isOutcome, notEvaluated, plural, readableDocument, shortName, type Outcome, type RuleContext, type RuleOf } from './context';
+import {
+  isOutcome,
+  notEvaluated,
+  plural,
+  readableDocument,
+  shortName,
+  type Outcome,
+  type RuleContext,
+  type RuleOf,
+} from './context';
 
 const DOCUMENT_NAMES: Partial<Record<DocumentType, string>> = {
   income_certificate: 'income certificate',

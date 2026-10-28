@@ -6,7 +6,10 @@ import { App } from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles.css';
 
-createRoot(document.getElementById('root') as HTMLElement).render(
+const container = document.getElementById('root');
+if (!container) throw new Error('The #root element is missing');
+
+createRoot(container).render(
   <StrictMode>
     <ErrorBoundary>
       {/* LazyMotion + m.* components: only the DOM animation features are bundled, not the full motion runtime. */}

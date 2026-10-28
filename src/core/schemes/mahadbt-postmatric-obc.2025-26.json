@@ -11,9 +11,7 @@
         "mr": "आधार कार्ड",
         "hi": "आधार कार्ड"
       },
-      "accepts": [
-        "aadhaar"
-      ]
+      "accepts": ["aadhaar"]
     },
     {
       "id": "caste_certificate",
@@ -23,9 +21,7 @@
         "mr": "जात प्रमाणपत्र",
         "hi": "जाति प्रमाणपत्र"
       },
-      "accepts": [
-        "caste_certificate"
-      ]
+      "accepts": ["caste_certificate"]
     },
     {
       "id": "income_certificate",
@@ -35,10 +31,7 @@
         "mr": "उत्पन्न व नॉन-क्रिमीलेयर प्रमाणपत्र",
         "hi": "आय व नॉन-क्रीमी लेयर प्रमाणपत्र"
       },
-      "accepts": [
-        "income_certificate",
-        "non_creamy_layer"
-      ]
+      "accepts": ["income_certificate", "non_creamy_layer"]
     },
     {
       "id": "domicile",
@@ -48,9 +41,7 @@
         "mr": "अधिवास प्रमाणपत्र",
         "hi": "अधिवास प्रमाणपत्र"
       },
-      "accepts": [
-        "domicile_certificate"
-      ]
+      "accepts": ["domicile_certificate"]
     },
     {
       "id": "bonafide",
@@ -60,9 +51,7 @@
         "mr": "बोनाफाईड व फी रचना",
         "hi": "बोनाफाइड व फीस संरचना"
       },
-      "accepts": [
-        "bonafide_certificate"
-      ]
+      "accepts": ["bonafide_certificate"]
     },
     {
       "id": "marksheet",
@@ -72,9 +61,7 @@
         "mr": "मागील वर्षाची गुणपत्रिका",
         "hi": "पिछले वर्ष की अंकतालिका"
       },
-      "accepts": [
-        "marksheet"
-      ]
+      "accepts": ["marksheet"]
     },
     {
       "id": "bank_passbook",
@@ -84,9 +71,7 @@
         "mr": "आधार संलग्न बँक पासबुक",
         "hi": "आधार से जुड़ी बैंक पासबुक"
       },
-      "accepts": [
-        "bank_passbook"
-      ]
+      "accepts": ["bank_passbook"]
     }
   ],
   "rules": [
@@ -264,17 +249,10 @@
       "issueDoc": "Income certificate + non-creamy layer",
       "when": {
         "formField": "category",
-        "in": [
-          "OBC",
-          "SBC",
-          "VJNT"
-        ]
+        "in": ["OBC", "SBC", "VJNT"]
       },
       "slot": "income_certificate",
-      "mustContain": [
-        "income_certificate",
-        "non_creamy_layer"
-      ],
+      "mustContain": ["income_certificate", "non_creamy_layer"],
       "needed": "Income and non-creamy layer certificates merged in one PDF",
       "why": {
         "en": "A college notice asks OBC, SBC and VJNT applicants to upload both certificates merged in one PDF in the income certificate slot; otherwise the application may be sent back.",
@@ -498,9 +476,5 @@
   ],
   "version": "2.0.0",
   "academicYear": "2025-26",
-  "categories": [
-    "OBC",
-    "SBC",
-    "VJNT"
-  ]
+  "categories": ["OBC", "SBC", "VJNT"]
 }

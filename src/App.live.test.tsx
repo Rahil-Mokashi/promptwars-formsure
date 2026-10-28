@@ -5,14 +5,23 @@ import { clickRun } from './test/ui';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 const doc = JSON.stringify({
-  documentTypes: ['income_certificate', 'non_creamy_layer'], language: 'mr',
+  documentTypes: ['income_certificate', 'non_creamy_layer'],
+  language: 'mr',
   applicantName: { original: 'आरव सुनील पाटील', english: 'Aarav Sunil Patil' },
-  dateOfBirth: '2006-03-14', issueDate: '2026-04-05', issuingAuthority: 'Tehsildar', category: 'OBC',
-  annualIncome: 200000, pageCount: 2, legible: true,
+  dateOfBirth: '2006-03-14',
+  issueDate: '2026-04-05',
+  issuingAuthority: 'Tehsildar',
+  category: 'OBC',
+  annualIncome: 200000,
+  pageCount: 2,
+  legible: true,
 });
 
 // Firebase AI is mocked: no network, no SDK.
-vi.mock('./services/firebase', () => ({ createFirebaseGenerate: () => async () => doc, isLiveReadingAvailable: () => true }));
+vi.mock('./services/firebase', () => ({
+  createFirebaseGenerate: () => () => Promise.resolve(doc),
+  isLiveReadingAvailable: () => true,
+}));
 
 beforeAll(() => {
   (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ = true;

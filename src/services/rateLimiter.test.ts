@@ -8,9 +8,10 @@ function fakeClock() {
   const sleeps: number[] = [];
   return {
     now: () => t,
-    sleep: async (ms: number) => {
+    sleep: (ms: number) => {
       sleeps.push(ms);
       t += ms;
+      return Promise.resolve();
     },
     advance: (ms: number) => void (t += ms),
     sleeps,
@@ -82,7 +83,7 @@ describe('createRateLimiter: daily cap (in memory only)', () => {
   });
   it('writes nothing to browser storage', async () => {
     const set = vi.spyOn(Storage.prototype, 'setItem');
-    await createRateLimiter({ now: () => 0, sleep: async () => undefined }).acquire();
+    await createRateLimiter({ now: () => 0, sleep: () => Promise.resolve(undefined) }).acquire();
     expect(set).not.toHaveBeenCalled();
     set.mockRestore();
   });
@@ -126,7 +127,7 @@ describe('createRateLimiter: timestamps persist across a reload (sessionStorage)
 
   it('stores only numbers, under one key', async () => {
     const storage = fakeStorage();
-    await createRateLimiter({ storage, now: () => 1234, sleep: async () => undefined }).acquire();
+    await createRateLimiter({ storage, now: () => 1234, sleep: () => Promise.resolve(undefined) }).acquire();
     expect([...storage.data.keys()]).toEqual([KEY]);
     expect(JSON.parse(storage.data.get(KEY) ?? 'null')).toEqual([1234]);
   });
@@ -134,7 +135,12 @@ describe('createRateLimiter: timestamps persist across a reload (sessionStorage)
   it('expires entries automatically: old timestamps are dropped on read and write', async () => {
     const day = 24 * 60 * 60 * 1000;
     const storage = fakeStorage({ [KEY]: JSON.stringify([0, 1000, 2000]) });
-    const limiter = createRateLimiter({ storage, dailyMax: 3, now: () => day + 5000, sleep: async () => undefined });
+    const limiter = createRateLimiter({
+      storage,
+      dailyMax: 3,
+      now: () => day + 5000,
+      sleep: () => Promise.resolve(undefined),
+    });
     await expect(limiter.acquire()).resolves.toBeUndefined(); // the three old calls no longer count
     expect(JSON.parse(storage.data.get(KEY) ?? 'null')).toEqual([day + 5000]);
   });
@@ -153,21 +159,35 @@ describe('createRateLimiter: timestamps persist across a reload (sessionStorage)
   it('ignores corrupt, non-numeric and future entries instead of failing', async () => {
     for (const junk of ['not json', '{"a":1}', '["x",null,{}]', '[1e999]', 'null']) {
       const storage = fakeStorage({ [KEY]: junk });
-      await expect(createRateLimiter({ storage, now: () => 10, sleep: async () => undefined }).acquire()).resolves.toBeUndefined();
+      await expect(
+        createRateLimiter({ storage, now: () => 10, sleep: () => Promise.resolve(undefined) }).acquire(),
+      ).resolves.toBeUndefined();
       expect(JSON.parse(storage.data.get(KEY) ?? 'null')).toEqual([10]);
     }
     const future = fakeStorage({ [KEY]: JSON.stringify([999_999_999_999]) });
-    await createRateLimiter({ storage: future, now: () => 10, sleep: async () => undefined }).acquire();
+    await createRateLimiter({ storage: future, now: () => 10, sleep: () => Promise.resolve(undefined) }).acquire();
     expect(JSON.parse(future.data.get(KEY) ?? 'null')).toEqual([10]);
   });
 
   it('keeps limiting in memory when storage throws (private mode, quota)', async () => {
     const broken = {
-      getItem: () => { throw new Error('denied'); },
-      setItem: () => { throw new Error('denied'); },
-      removeItem: () => { throw new Error('denied'); },
+      getItem: () => {
+        throw new Error('denied');
+      },
+      setItem: () => {
+        throw new Error('denied');
+      },
+      removeItem: () => {
+        throw new Error('denied');
+      },
     };
-    const limiter = createRateLimiter({ storage: broken, maxRequests: 100, dailyMax: 2, now: () => 0, sleep: async () => undefined });
+    const limiter = createRateLimiter({
+      storage: broken,
+      maxRequests: 100,
+      dailyMax: 2,
+      now: () => 0,
+      sleep: () => Promise.resolve(undefined),
+    });
     await limiter.acquire();
     await limiter.acquire();
     await expect(limiter.acquire()).rejects.toBeInstanceOf(RateLimitError);
@@ -175,7 +195,7 @@ describe('createRateLimiter: timestamps persist across a reload (sessionStorage)
 
   it('works without storage and writes nothing by default', async () => {
     const set = vi.spyOn(Storage.prototype, 'setItem');
-    await createRateLimiter({ now: () => 0, sleep: async () => undefined }).acquire();
+    await createRateLimiter({ now: () => 0, sleep: () => Promise.resolve(undefined) }).acquire();
     expect(set).not.toHaveBeenCalled();
     set.mockRestore();
   });

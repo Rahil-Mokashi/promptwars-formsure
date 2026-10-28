@@ -18,17 +18,21 @@ export interface FirebaseEnv {
 }
 
 // initializeAppCheck throws if it runs twice for the same app, so remember which apps have it.
-const appCheckStarted = new WeakSet<object>();
+const appCheckStarted = new WeakSet();
+
+/** `value` unless it is missing or empty. */
+const nonEmpty = (value: string | undefined, fallback: string): string =>
+  value === undefined || value === '' ? fallback : value;
 
 /** Firebase web config from VITE_FIREBASE_* variables, or null when it is missing. */
-export function firebaseConfig(env: FirebaseEnv = import.meta.env as FirebaseEnv) {
+export function firebaseConfig(env: FirebaseEnv = import.meta.env) {
   const { VITE_FIREBASE_API_KEY: apiKey, VITE_FIREBASE_PROJECT_ID: projectId, VITE_FIREBASE_APP_ID: appId } = env;
   if (!apiKey || !projectId || !appId) return null;
   return {
     apiKey,
     projectId,
     appId,
-    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || `${projectId}.firebaseapp.com`,
+    authDomain: nonEmpty(env.VITE_FIREBASE_AUTH_DOMAIN, `${projectId}.firebaseapp.com`),
     storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   };
@@ -38,23 +42,23 @@ export function firebaseConfig(env: FirebaseEnv = import.meta.env as FirebaseEnv
  * Why live reading is off, or null when it is on. It fails closed: in a production build both the Firebase config and
  * the App Check site key are required, so a build without App Check can never call Gemini.
  */
-export function liveReadingProblem(env: FirebaseEnv = import.meta.env as FirebaseEnv): string | null {
+export function liveReadingProblem(env: FirebaseEnv = import.meta.env): string | null {
   if (!firebaseConfig(env)) return 'Firebase is not configured';
   if (env.PROD && !env.VITE_RECAPTCHA_SITE_KEY) return 'App Check is not configured';
   return null;
 }
 
 /** True when live reading can be used. */
-export const isLiveReadingAvailable = (env: FirebaseEnv = import.meta.env as FirebaseEnv): boolean => liveReadingProblem(env) === null;
+export const isLiveReadingAvailable = (env: FirebaseEnv = import.meta.env): boolean => liveReadingProblem(env) === null;
 
 /**
  * Gemini through Firebase AI Logic (Gemini Developer API backend), called straight from the browser.
  * Returns null when live reading is not available (see {@link liveReadingProblem}). The SDK is imported lazily so the sample flow stays light.
  */
-export function createFirebaseGenerate(env: FirebaseEnv = import.meta.env as FirebaseEnv): Generate | null {
+export function createFirebaseGenerate(env: FirebaseEnv = import.meta.env): Generate | null {
   const config = firebaseConfig(env);
   if (!config || liveReadingProblem(env) !== null) return null;
-  const modelName = env.VITE_GEMINI_MODEL || DEFAULT_MODEL;
+  const modelName = nonEmpty(env.VITE_GEMINI_MODEL, DEFAULT_MODEL);
 
   return async ({ mimeType, data, prompt }) => {
     const [{ initializeApp, getApps }, { getAI, getGenerativeModel, GoogleAIBackend, Schema }] = await Promise.all([
@@ -101,7 +105,10 @@ export function createFirebaseGenerate(env: FirebaseEnv = import.meta.env as Fir
       },
       { timeout: GEMINI_TIMEOUT_MS },
     );
-    const result = await model.generateContent([{ type: 'inlineData', inlineData: { mimeType, data } }, { type: 'text', text: prompt }]);
+    const result = await model.generateContent([
+      { type: 'inlineData', inlineData: { mimeType, data } },
+      { type: 'text', text: prompt },
+    ]);
     return result.response.text();
   };
 }

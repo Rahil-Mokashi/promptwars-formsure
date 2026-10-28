@@ -1,27 +1,21 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { UNAVAILABLE_MESSAGE } from '../core/constants';
-import { UnavailableError } from '../core/errors';
-import { batchProblem } from '../core/fileValidation';
-import { validateForm } from '../core/formSchema';
-import type { ApplicationForm, AuditReport, DocumentsBySlot, Lang, SampleResponse, SchemePack, SlotId } from '../core/types';
+import { useCallback, useEffect, useMemo, useReducer, type Dispatch } from 'react';
+import type {
+  ApplicationForm,
+  AuditReport,
+  DocumentsBySlot,
+  Lang,
+  SampleResponse,
+  SchemePack,
+  SlotId,
+} from '../core/types';
 import { audit, getSample, packs, wirePack } from '../services/api';
 import { isLiveReadingAvailable } from '../services/firebase';
-import type { ReadOutcome } from '../services/readFiles';
-import { prepareUpload } from '../services/uploadPipeline';
-import { flowReducer, initialFlowState, type FormErrors, type Screen } from './flowReducer';
+import { flowReducer, initialFlowState, type FlowAction, type FormErrors, type Screen } from './flowReducer';
+import { useAuditRun } from './useAuditRun';
 import { useDocumentReader, type DocumentReader } from './useDocumentReader';
+import { useFileIntake } from './useFileIntake';
 
-export { EMPTY_FORM, type FormErrors, type Screen } from './flowReducer';
-
-const failureMessage = (outcome: ReadOutcome): string => {
-  const failures = Object.values(outcome.failures);
-  const first = failures[0] ?? '';
-  if (outcome.stopped && first) return `${first} Your other files are kept; use "Retry this file" below.`;
-  return `${failures.length === 1 ? '1 file' : `${failures.length} files`} could not be read. Retry the file below or replace it.`;
-};
-
-const messageOf = (e: unknown): string =>
-  e instanceof UnavailableError ? UNAVAILABLE_MESSAGE : e instanceof Error ? e.message : 'Something went wrong. Please try again.';
+export { type FormErrors, type Screen } from './flowReducer';
 
 /** Everything the app does, as state plus actions. Screens stay dumb. */
 export interface Flow {
@@ -61,134 +55,119 @@ export interface Flow {
   restart: () => void;
 }
 
-/**
- * The app's controller. State changes go through {@link flowReducer}; this hook adds the side effects
- * (cleaning files, reading with Gemini, running the rules) and dispatches their results as actions.
- */
-export function useFlow(): Flow {
-  const [state, dispatch] = useReducer(flowReducer, initialFlowState);
-  const [validating, setValidating] = useState(0);
-  const liveAvailable = useMemo(() => isLiveReadingAvailable(), []);
-  const activeRun = useRef(0); // a newer run, or leaving the audit screen, cancels an older one
-  const { sample, form, files, consent } = state;
-  const pack = useMemo(() => wirePack(state.packId), [state.packId]);
-  const slotOrder = useMemo(() => pack.slots.map((s) => s.id), [pack]);
-  const reader = useDocumentReader(state.files, slotOrder);
-  const { cancel, reset, invalidate, readAll } = reader;
-
+/** The language of the page, and dropping every file and result held in memory when the page is left. */
+function usePageEffects(
+  lang: Lang,
+  files: Partial<Record<SlotId, File>>,
+  reset: () => void,
+  dispatch: Dispatch<FlowAction>,
+): void {
   useEffect(() => {
-    document.documentElement.lang = state.lang;
-  }, [state.lang]);
+    document.documentElement.lang = lang;
+  }, [lang]);
 
-  // Leaving the page drops every file and result held in memory.
   useEffect(() => {
     const clear = () => {
       reset();
       for (const slotId of Object.keys(files) as SlotId[]) dispatch({ type: 'SET_FILE', slotId, file: undefined });
     };
     window.addEventListener('pagehide', clear);
-    return () => window.removeEventListener('pagehide', clear);
-  }, [reset, files]);
+    return () => {
+      window.removeEventListener('pagehide', clear);
+    };
+  }, [reset, files, dispatch]);
+}
+
+/** Actions that only dispatch (after clearing what was read, where the scheme or applicant changes). */
+function useSetters(dispatch: Dispatch<FlowAction>, reset: () => void) {
+  return useMemo(
+    () => ({
+      setLang: (lang: Lang) => {
+        dispatch({ type: 'SET_LANG', lang });
+      },
+      setForm: (form: ApplicationForm) => {
+        dispatch({ type: 'SET_FORM', form });
+      },
+      setConsent: (consent: boolean) => {
+        dispatch({ type: 'SET_CONSENT', consent });
+      },
+      trySample: () => {
+        dispatch({ type: 'SELECT_SAMPLE', sample: getSample() });
+      },
+      start: () => {
+        reset();
+        dispatch({ type: 'SELECT_LIVE' });
+      },
+      selectPack: (packId: string) => {
+        const chosen = wirePack(packId);
+        reset();
+        dispatch({ type: 'SELECT_PACK', packId: chosen.id, categories: chosen.categories });
+      },
+    }),
+    [dispatch, reset],
+  );
+}
+
+/**
+ * The app controller. State changes go through {@link flowReducer}; this hook adds the side effects
+ * (cleaning files, reading with Gemini, running the rules) and dispatches their results as actions.
+ */
+export function useFlow(): Flow {
+  const [state, dispatch] = useReducer(flowReducer, initialFlowState);
+  const liveAvailable = useMemo(() => isLiveReadingAvailable(), []);
+  const { sample, form, files, consent } = state;
+  const pack = useMemo(() => wirePack(state.packId), [state.packId]);
+  const slotOrder = useMemo(() => pack.slots.map((s) => s.id), [pack]);
+  const reader = useDocumentReader(files, slotOrder);
+  const { cancel, reset, invalidate, readAll } = reader;
+  const { onFile, validating } = useFileIntake(files, invalidate, dispatch);
+  const { run, supersede } = useAuditRun({ sample, consent, form, pack, readAll, dispatch });
+  const setters = useSetters(dispatch, reset);
+  usePageEffects(state.lang, files, reset, dispatch);
 
   const go = useCallback(
     (screen: Screen) => {
       if (screen !== 'audit') {
-        activeRun.current++;
+        supersede();
         cancel();
       }
       dispatch({ type: 'NAVIGATE', screen });
     },
-    [cancel],
+    [cancel, supersede],
   );
-
-  const trySample = useCallback(() => dispatch({ type: 'SELECT_SAMPLE', sample: getSample() }), []);
-
-  const start = useCallback(() => {
-    reset();
-    dispatch({ type: 'SELECT_LIVE' });
-  }, [reset]);
-
-  const onFile = useCallback(
-    async (slotId: SlotId, file: File | undefined) => {
-      if (!file) {
-        invalidate(slotId);
-        dispatch({ type: 'SET_FILE', slotId, file: undefined });
-        return;
-      }
-      setValidating((n) => n + 1);
-      try {
-        const others = Object.entries(files).filter(([id]) => id !== slotId).map(([, f]) => f.size);
-        const batch = batchProblem([...others, file.size]);
-        const prepared = batch ? { error: batch } : await prepareUpload(file);
-        if (!prepared.file) {
-          dispatch({ type: 'FILE_REJECTED', message: prepared.error ?? '' });
-          return;
-        }
-        invalidate(slotId);
-        dispatch({ type: 'SET_FILE', slotId, file: prepared.file });
-      } finally {
-        setValidating((n) => n - 1);
-      }
-    },
-    [files, invalidate],
-  );
-
-  const run = useCallback(async () => {
-    if (!sample && !consent) return;
-    const checked = validateForm(form, undefined, pack.categories);
-    if (!checked.ok) {
-      dispatch({ type: 'RUN_AUDIT', run: { stage: 'invalid', formErrors: checked.errors } });
-      return;
-    }
-    dispatch({ type: 'SET_FORM', form: checked.form });
-    const me = ++activeRun.current;
-    const current = () => activeRun.current === me;
-    dispatch({ type: 'RUN_AUDIT', run: { stage: 'started' } });
-    try {
-      if (sample) {
-        dispatch({ type: 'RUN_AUDIT', run: { stage: 'finished', report: audit(checked.form, sample.errorDocuments, pack.id) } });
-        return;
-      }
-      const outcome = await readAll();
-      if (!current()) return;
-      if (Object.keys(outcome.failures).length > 0) {
-        dispatch({ type: 'RUN_AUDIT', run: { stage: 'failed', error: failureMessage(outcome) } });
-        return;
-      }
-      dispatch({ type: 'RUN_AUDIT', run: { stage: 'finished', report: audit(checked.form, outcome.documents, pack.id) } });
-    } catch (e) {
-      if (current()) dispatch({ type: 'RUN_AUDIT', run: { stage: 'failed', error: messageOf(e) } });
-    }
-  }, [consent, form, pack, readAll, sample]);
-
   const recheck = useCallback(() => {
-    if (!sample) return go('upload');
-    dispatch({ type: 'RECHECK', report: audit(form, sample.fixedDocuments, pack.id) });
+    if (!sample) go('upload');
+    else dispatch({ type: 'RECHECK', report: audit(form, sample.fixedDocuments, pack.id) });
   }, [form, go, pack, sample]);
-
   const restart = useCallback(() => {
     reset();
-    activeRun.current++;
+    supersede();
     cancel();
     dispatch({ type: 'RESTART' });
-  }, [cancel, reset]);
-
-  const selectPack = useCallback(
-    (packId: string) => {
-      const chosen = wirePack(packId);
-      reset();
-      dispatch({ type: 'SELECT_PACK', packId: chosen.id, categories: chosen.categories });
-    },
-    [reset],
-  );
-
-  const setLang = useCallback((lang: Lang) => dispatch({ type: 'SET_LANG', lang }), []);
-  const setForm = useCallback((next: ApplicationForm) => dispatch({ type: 'SET_FORM', form: next }), []);
-  const setConsent = useCallback((value: boolean) => dispatch({ type: 'SET_CONSENT', consent: value }), []);
+  }, [cancel, reset, supersede]);
 
   return {
-    screen: state.screen, lang: state.lang, pack, packs, selectPack, sample, form, files, error: state.error, formErrors: state.formErrors,
-    validating: validating > 0, consent, setConsent, liveAvailable, report: state.report, runId: state.runId,
-    docs: sample ? sample.errorDocuments : reader.docs, reader, setLang, setForm, go, trySample, start, onFile, run, recheck, restart,
+    ...setters,
+    screen: state.screen,
+    lang: state.lang,
+    pack,
+    packs,
+    sample,
+    form,
+    files,
+    error: state.error,
+    formErrors: state.formErrors,
+    validating,
+    consent,
+    liveAvailable,
+    report: state.report,
+    runId: state.runId,
+    docs: sample ? sample.errorDocuments : reader.docs,
+    reader,
+    go,
+    onFile,
+    run,
+    recheck,
+    restart,
   };
 }

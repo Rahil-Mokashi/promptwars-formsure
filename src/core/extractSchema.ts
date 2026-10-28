@@ -7,8 +7,15 @@ import type { ExtractedDocument } from './types';
 const isoDate = z.string().refine(isRealDate);
 
 const DOCUMENT_TYPES = [
-  'aadhaar', 'caste_certificate', 'income_certificate', 'non_creamy_layer',
-  'domicile_certificate', 'bonafide_certificate', 'marksheet', 'bank_passbook', 'other',
+  'aadhaar',
+  'caste_certificate',
+  'income_certificate',
+  'non_creamy_layer',
+  'domicile_certificate',
+  'bonafide_certificate',
+  'marksheet',
+  'bank_passbook',
+  'other',
 ] as const;
 
 const MAX_TEXT = 200;

@@ -26,7 +26,14 @@ export const browserImageTools: ImageTools = {
   async decode(file) {
     if (typeof createImageBitmap !== 'function') throw new Error('createImageBitmap is not available');
     const bitmap = await createImageBitmap(file);
-    return { width: bitmap.width, height: bitmap.height, close: () => bitmap.close(), source: bitmap };
+    return {
+      width: bitmap.width,
+      height: bitmap.height,
+      close: () => {
+        bitmap.close();
+      },
+      source: bitmap,
+    };
   },
   encode(image, type, scale) {
     const canvas = document.createElement('canvas');
@@ -36,7 +43,14 @@ export const browserImageTools: ImageTools = {
     if (!context) return Promise.reject(new Error('canvas is not available'));
     context.drawImage(image.source as CanvasImageSource, 0, 0, canvas.width, canvas.height);
     return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('encoding failed'))), type, REENCODE_QUALITY);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('encoding failed'));
+        },
+        type,
+        REENCODE_QUALITY,
+      );
     });
   },
 };
@@ -44,8 +58,12 @@ export const browserImageTools: ImageTools = {
 const readAllBytes = (file: Blob): Promise<Uint8Array> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
-    reader.onerror = () => reject(new Error('Could not read the file'));
+    reader.onload = () => {
+      resolve(new Uint8Array(reader.result as ArrayBuffer));
+    };
+    reader.onerror = () => {
+      reject(new Error('Could not read the file'));
+    };
     reader.readAsArrayBuffer(file);
   });
 

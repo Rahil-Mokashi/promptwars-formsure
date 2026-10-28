@@ -1,13 +1,14 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
+import { omit } from '../core/object';
 import { READ_CONCURRENCY, READ_STAGGER_MS, UNAVAILABLE_MESSAGE } from '../core/constants';
 import { ExtractionError, UnavailableError } from '../core/errors';
 import { maskAadhaar } from '../core/mask';
-import type { DocumentsBySlot, ReadProgress, SlotId, SlotReadState } from '../core/types';
+import type { DocumentsBySlot, ExtractedDocument, ReadProgress, SlotId } from '../core/types';
 import { extract } from '../services/api';
 import { readFiles, type ReadCache, type ReadOutcome } from '../services/readFiles';
 import { sleep } from '../services/sleep';
+import { useSlotStates, type SlotSetter, type SlotStates } from './useSlotStates';
 
-type SlotStates = Partial<Record<SlotId, SlotReadState>>;
 type Files = Partial<Record<SlotId, File>>;
 
 /** What {@link useDocumentReader} gives back. */
@@ -32,6 +33,54 @@ export interface DocumentReader {
   reset: () => void;
 }
 
+/** The words shown under a file that could not be read. */
+function failureOf(err: unknown, file: File): string {
+  if (err instanceof UnavailableError) return UNAVAILABLE_MESSAGE;
+  return err instanceof ExtractionError ? err.message : `Could not read ${maskAadhaar(file.name)}.`;
+}
+
+/** Reads one file; `onBusy` hears the seconds left while Gemini asks us to wait. */
+async function readOne(
+  file: File,
+  onBusy: (left: number) => void,
+): Promise<{ doc: ExtractedDocument } | { message: string }> {
+  try {
+    return { doc: await extract(file, { onBusy }) };
+  } catch (err) {
+    return { message: failureOf(err, file) };
+  }
+}
+
+/** Reads one file again, showing "Reading…" (or the wait while Gemini is busy) and then the document or the failure. */
+function useRetry(
+  files: Files,
+  cache: RefObject<ReadCache>,
+  setSlot: SlotSetter,
+  setDocs: Dispatch<SetStateAction<DocumentsBySlot>>,
+) {
+  return useCallback(
+    async (slotId: SlotId) => {
+      const file = files[slotId];
+      if (!file) return;
+      setSlot(slotId, { status: 'reading', message: 'Reading…' });
+      const result = await readOne(file, (left) => {
+        setSlot(slotId, {
+          status: 'reading',
+          message: left > 0 ? `Gemini is busy, retrying in ${left}s…` : 'Reading…',
+        });
+      });
+      if ('message' in result) {
+        setSlot(slotId, { status: 'failed', message: result.message });
+        return;
+      }
+      cache.current.set(slotId, { file, doc: result.doc });
+      setDocs((d) => ({ ...d, [slotId]: result.doc }));
+      setSlot(slotId, undefined);
+    },
+    [files, cache, setSlot, setDocs],
+  );
+}
+
 /**
  * Reads the selected files with Gemini: cached, retryable per file.
  * @param order slot ids of the chosen scheme pack, in reading order
@@ -40,21 +89,13 @@ export function useDocumentReader(files: Files, order: readonly SlotId[]): Docum
   const cache = useRef<ReadCache>(new Map());
   const token = useRef(0);
   const [progress, setProgress] = useState<ReadProgress | null>(null);
-  const [slotStates, setSlotStates] = useState<SlotStates>({});
   const [docs, setDocs] = useState<DocumentsBySlot>({});
-
-  const setSlot = useCallback((slotId: SlotId, state: SlotReadState | undefined) => {
-    setSlotStates((prev) => {
-      const { [slotId]: _old, ...rest } = prev;
-      void _old;
-      return state ? { ...rest, [slotId]: state } : rest;
-    });
-  }, []);
+  const { slotStates, setSlot, clearSlots, retrying } = useSlotStates();
 
   const readAll = useCallback(async (): Promise<ReadOutcome> => {
     const me = ++token.current;
     setProgress(null);
-    setSlotStates({});
+    clearSlots();
     return readFiles({
       order,
       files,
@@ -71,37 +112,15 @@ export function useDocumentReader(files: Files, order: readonly SlotId[]): Docum
       },
       isCancelled: () => token.current !== me,
     });
-  }, [files, order, setSlot]);
+  }, [files, order, setSlot, clearSlots]);
 
-  const retry = useCallback(
-    async (slotId: SlotId) => {
-      const file = files[slotId];
-      if (!file) return;
-      setSlot(slotId, { status: 'reading', message: 'Reading…' });
-      try {
-        const doc = await extract(file, {
-          onBusy: (left) => setSlot(slotId, { status: 'reading', message: left > 0 ? `Gemini is busy, retrying in ${left}s…` : 'Reading…' }),
-        });
-        cache.current.set(slotId, { file, doc });
-        setDocs((d) => ({ ...d, [slotId]: doc }));
-        setSlot(slotId, undefined);
-      } catch (err) {
-        const message = err instanceof UnavailableError ? UNAVAILABLE_MESSAGE : err instanceof ExtractionError ? err.message : `Could not read ${maskAadhaar(file.name)}.`;
-        setSlot(slotId, { status: 'failed', message });
-      }
-    },
-    [files, setSlot],
-  );
+  const retry = useRetry(files, cache, setSlot, setDocs);
 
   const invalidate = useCallback(
     (slotId: SlotId) => {
       cache.current.delete(slotId);
       setSlot(slotId, undefined);
-      setDocs((prev) => {
-        const { [slotId]: _gone, ...rest } = prev;
-        void _gone;
-        return rest;
-      });
+      setDocs((prev) => omit(prev, slotId));
     },
     [setSlot],
   );
@@ -115,10 +134,9 @@ export function useDocumentReader(files: Files, order: readonly SlotId[]): Docum
     token.current++;
     cache.current.clear();
     setProgress(null);
-    setSlotStates({});
+    clearSlots();
     setDocs({});
-  }, []);
+  }, [clearSlots]);
 
-  const retrying = useMemo(() => Object.values(slotStates).some((s) => s.status === 'reading'), [slotStates]);
   return { progress, slotStates, docs, retrying, readAll, retry, invalidate, cancel, reset };
 }
