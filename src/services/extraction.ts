@@ -1,8 +1,8 @@
 import { RATE_LIMIT_BACKOFF_SECONDS, SECOND_MS, TIMEOUT_RETRIES } from '../core/constants';
 import { ExtractionError, RateLimitError } from '../core/errors';
 import { extractedSchema } from '../core/extractSchema';
-import { validateFile } from '../core/fileValidation';
-import { describeError, maskDeep } from '../core/mask';
+import { validateUpload } from '../core/fileValidation';
+import { describeError, maskAadhaar, maskDeep } from '../core/mask';
 import type { ExtractedDocument } from '../core/types';
 import { EXTRACTION_PROMPT } from './prompt';
 import { sleep as realSleep } from './sleep';
@@ -49,7 +49,7 @@ const toBase64 = (file: Blob): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
-const unreadable = (file: File) => new ExtractionError(`Could not read ${file.name}. Try a clearer scan or a different file.`);
+const unreadable = (file: File) => new ExtractionError(`Could not read ${maskAadhaar(file.name)}. Try a clearer scan or a different file.`);
 
 /** Counts down `seconds`, reporting each second through `onBusy`. */
 async function waitWithCountdown(seconds: number, options: ExtractOptions): Promise<void> {
@@ -71,7 +71,7 @@ async function waitWithCountdown(seconds: number, options: ExtractOptions): Prom
  * @throws {RateLimitError} still rate-limited after every backoff
  */
 export async function extractDocument(generate: Generate, file: File, options: ExtractOptions = {}): Promise<ExtractedDocument> {
-  const problem = validateFile(file);
+  const problem = await validateUpload(file);
   if (problem) throw new ExtractionError(problem);
   const data = await toBase64(file);
 

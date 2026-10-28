@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { pdfFile } from './test/files';
+import { clickRun } from './test/ui';
 import { App } from './App';
 
 beforeAll(() => {
@@ -65,7 +66,7 @@ describe('reduced-motion sample flow', () => {
     await user.type(await screen.findByLabelText('Full name'), 'Aarav Sunil Patil');
     await user.type(screen.getByLabelText('Date of birth'), '2006-03-14');
     await user.upload(await screen.findByLabelText(/Aadhaar card/), pdfFile('a.pdf'));
-    await user.click(screen.getByRole('button', { name: /run formsure check/i }));
+    await clickRun(user);
     expect(await screen.findByRole('alert')).toHaveTextContent('Live reading unavailable, try the sample applicant');
   });
 });

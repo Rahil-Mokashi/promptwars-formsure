@@ -37,6 +37,7 @@ async function chooseThreeAndRun(user: User) {
   await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('a-aadhaar.pdf'));
   await user.upload(screen.getByLabelText(/OBC caste certificate/), pdfFile('b-caste.pdf'));
   await user.upload(screen.getByLabelText(/Income certificate \+ non-creamy layer/), pdfFile('c-income.pdf'));
+  await waitFor(() => expect(screen.getAllByText('Uploaded')).toHaveLength(3)); // file checks finish asynchronously
   await user.click(screen.getByRole('button', { name: /run formsure check/i }));
 }
 

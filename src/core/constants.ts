@@ -28,5 +28,14 @@ export const MAX_REQUESTS_PER_WINDOW = 8;
 /** Length of the limiter's rolling window (one minute). */
 export const RATE_WINDOW_MS = 60_000;
 
+/** How many bytes of a file are read to recognise its real type (magic bytes). */
+export const MAGIC_BYTES_LENGTH = 12;
+
+/** Longest full name the form accepts. */
+export const NAME_MAX_LENGTH = 100;
+
+/** Earliest plausible birth year. */
+export const FIRST_BIRTH_YEAR = 1900;
+
 /** Milliseconds in a second, used by countdowns. */
 export const SECOND_MS = 1000;

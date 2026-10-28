@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { READ_GAP_MS, UNAVAILABLE_MESSAGE } from '../core/constants';
 import { ExtractionError, UnavailableError } from '../core/errors';
+import { maskAadhaar } from '../core/mask';
 import type { DocumentsBySlot, ReadProgress, SlotId, SlotReadState } from '../core/types';
 import { extract, pack } from '../services/api';
 import { readFiles, type ReadCache, type ReadOutcome } from '../services/readFiles';
@@ -83,7 +84,7 @@ export function useDocumentReader(files: Files): DocumentReader {
         setDocs((d) => ({ ...d, [slotId]: doc }));
         setSlot(slotId, undefined);
       } catch (err) {
-        const message = err instanceof UnavailableError ? UNAVAILABLE_MESSAGE : err instanceof ExtractionError ? err.message : `Could not read ${file.name}.`;
+        const message = err instanceof UnavailableError ? UNAVAILABLE_MESSAGE : err instanceof ExtractionError ? err.message : `Could not read ${maskAadhaar(file.name)}.`;
         setSlot(slotId, { status: 'failed', message });
       }
     },

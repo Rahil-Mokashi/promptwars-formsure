@@ -1,3 +1,4 @@
+import './zodConfig';
 import { z } from 'zod';
 import type { ExtractedDocument } from './types';
 

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { pdfFile } from './test/files';
+import { clickRun } from './test/ui';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 const doc = JSON.stringify({
@@ -31,7 +32,7 @@ describe('live upload with mocked Firebase AI', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/PNG, JPG, WebP or PDF/);
 
     await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('aadhaar.pdf'));
-    await user.click(screen.getByRole('button', { name: /run formsure check/i }));
+    await clickRun(user);
     expect(await screen.findByText('Checking Aarav’s application')).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: /see readiness report/i }));
     expect(await screen.findByRole('heading', { name: /to fix before you submit/ })).toBeInTheDocument();

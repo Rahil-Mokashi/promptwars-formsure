@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { UNAVAILABLE_MESSAGE } from '../core/constants';
 import { UnavailableError } from '../core/errors';
-import { validateFile } from '../core/fileValidation';
+import { validateUpload } from '../core/fileValidation';
+import { validateForm } from '../core/formSchema';
 import type { ApplicationForm, AuditReport, DocumentsBySlot, Lang, SampleResponse, SlotId } from '../core/types';
 import { audit, getSample } from '../services/api';
 import type { ReadOutcome } from '../services/readFiles';
@@ -31,6 +32,10 @@ export interface Flow {
   form: ApplicationForm;
   files: Partial<Record<SlotId, File>>;
   error: string | null;
+  /** One message per invalid form field, shown next to the field. */
+  formErrors: FormErrors;
+  /** True while a chosen file is still being checked (magic bytes), so Run must wait. */
+  validating: boolean;
   report: AuditReport | null;
   runId: number;
   /** Documents behind the current report (sample or read). */
@@ -41,11 +46,14 @@ export interface Flow {
   go: (screen: Screen) => void;
   trySample: () => void;
   start: () => void;
-  onFile: (slotId: SlotId, file: File | undefined) => void;
+  onFile: (slotId: SlotId, file: File | undefined) => Promise<void>;
   run: () => Promise<void>;
   recheck: () => void;
   restart: () => void;
 }
+
+/** Messages for invalid form fields. */
+export type FormErrors = Partial<Record<keyof ApplicationForm, string>>;
 
 /** The app's state machine: which screen, which applicant, which files, which report. */
 export function useFlow(): Flow {
@@ -57,6 +65,8 @@ export function useFlow(): Flow {
   const [report, setReport] = useState<AuditReport | null>(null);
   const [runId, setRunId] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [validating, setValidating] = useState(0);
   const activeRun = useRef(0); // a newer run, or leaving the audit screen, cancels an older one
   const reader = useDocumentReader(files);
   const { cancel, reset, invalidate, readAll } = reader;
@@ -94,8 +104,10 @@ export function useFlow(): Flow {
   }, [go, reset]);
 
   const onFile = useCallback(
-    (slotId: SlotId, file: File | undefined) => {
-      const problem = file ? validateFile(file) : null;
+    async (slotId: SlotId, file: File | undefined) => {
+      setValidating((n) => n + 1);
+      const problem = file ? await validateUpload(file).finally(() => setValidating((n) => n - 1)) : null;
+      if (!file) setValidating((n) => n - 1);
       setError(problem);
       if (problem) return;
       invalidate(slotId);
@@ -105,6 +117,14 @@ export function useFlow(): Flow {
   );
 
   const run = useCallback(async () => {
+    const checked = validateForm(form);
+    if (!checked.ok) {
+      setFormErrors(checked.errors);
+      setError('Check the highlighted fields, then run the check again.');
+      return;
+    }
+    setFormErrors({});
+    setForm(checked.form);
     const me = ++activeRun.current;
     const current = () => activeRun.current === me;
     setError(null);
@@ -113,7 +133,7 @@ export function useFlow(): Flow {
     setScreen('audit');
     try {
       if (sample) {
-        setReport(audit(form, sample.errorDocuments));
+        setReport(audit(checked.form, sample.errorDocuments));
         return;
       }
       const outcome = await readAll();
@@ -123,7 +143,7 @@ export function useFlow(): Flow {
         setScreen('upload');
         return;
       }
-      setReport(audit(form, outcome.documents));
+      setReport(audit(checked.form, outcome.documents));
     } catch (e) {
       if (!current()) return;
       setError(messageOf(e));
@@ -148,5 +168,5 @@ export function useFlow(): Flow {
   }, [go, reset]);
 
   const docs = sample ? sample.errorDocuments : reader.docs;
-  return { screen, lang, sample, form, files, error, report, runId, docs, reader, setLang, setForm, go, trySample, start, onFile, run, recheck, restart };
+  return { screen, lang, sample, form, files, error, formErrors, validating: validating > 0, report, runId, docs, reader, setLang, setForm, go, trySample, start, onFile, run, recheck, restart };
 }

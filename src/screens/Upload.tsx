@@ -1,4 +1,7 @@
 import { motion } from 'framer-motion';
+import { NAME_MAX_LENGTH } from '../core/constants';
+import { maskAadhaar } from '../core/mask';
+import type { FormErrors } from '../hooks/useFlow';
 import type { ApplicationForm, Lang, SampleResponse, SchemePack, SlotId, SlotReadState } from '../core/types';
 import { ArrowIcon, FileIcon, Tick } from '../icons';
 import { fadeUp, useReduce } from '../motion';
@@ -21,13 +24,17 @@ interface Props {
   retrying: boolean;
   onRetry: (slot: SlotId) => void;
   error: string | null;
+  /** Messages for invalid form fields. */
+  formErrors: FormErrors;
+  /** A chosen file is still being checked. */
+  validating: boolean;
   onBack: () => void;
   onRun: () => void;
 }
 
-export function Upload({ pack, lang, sample, form, onForm, files, onFile, slotStates, retrying, onRetry, error, onBack, onRun }: Props) {
+export function Upload({ pack, lang, sample, form, onForm, files, onFile, slotStates, retrying, onRetry, error, formErrors, validating, onBack, onRun }: Props) {
   const reduce = useReduce();
-  const canRun = sample !== null || (form.fullName.trim() !== '' && form.dateOfBirth !== '' && Object.keys(files).length > 0);
+  const canRun = !validating && (sample !== null || (form.fullName.trim() !== '' && form.dateOfBirth !== '' && Object.keys(files).length > 0));
 
   return (
     <main className="wrap page">
@@ -42,7 +49,7 @@ export function Upload({ pack, lang, sample, form, onForm, files, onFile, slotSt
             const n = slotNames(slot, lang);
             const file = files[slot.id];
             const state = slotStates[slot.id];
-            const shown = sample ? sample.files[slot.id] : file ? { name: file.name, size: kb(file.size) } : null;
+            const shown = sample ? sample.files[slot.id] : file ? { name: maskAadhaar(file.name), size: kb(file.size) } : null;
             return (
               <motion.div key={slot.id} className="card slot" {...fadeUp(reduce, 0.12 + i * 0.06)}>
                 <div className="slottop">
@@ -86,15 +93,25 @@ export function Upload({ pack, lang, sample, form, onForm, files, onFile, slotSt
           <p className="pdesc">FormSure compares these with every document.</p>
           <div className="field">
             <label htmlFor="nm">Full name</label>
-            <input id="nm" value={form.fullName} readOnly={!!sample} onChange={(e) => onForm({ ...form, fullName: e.target.value })} autoComplete="off" />
+            <input
+              id="nm" value={form.fullName} readOnly={!!sample} maxLength={NAME_MAX_LENGTH} autoComplete="off"
+              aria-invalid={!!formErrors.fullName} aria-describedby={formErrors.fullName ? 'nm-err' : undefined}
+              onChange={(e) => onForm({ ...form, fullName: e.target.value })}
+            />
+            {formErrors.fullName && <p className="fielderr" id="nm-err">{formErrors.fullName}</p>}
           </div>
           <div className="field">
             <label htmlFor="dob">Date of birth</label>
             {sample ? (
               <input id="dob" value={dmy(form.dateOfBirth)} readOnly />
             ) : (
-              <input id="dob" type="date" value={form.dateOfBirth} onChange={(e) => onForm({ ...form, dateOfBirth: e.target.value })} />
+              <input
+                id="dob" type="date" value={form.dateOfBirth} aria-invalid={!!formErrors.dateOfBirth}
+                aria-describedby={formErrors.dateOfBirth ? 'dob-err' : undefined}
+                onChange={(e) => onForm({ ...form, dateOfBirth: e.target.value })}
+              />
             )}
+            {formErrors.dateOfBirth && <p className="fielderr" id="dob-err">{formErrors.dateOfBirth}</p>}
           </div>
           <div className="field">
             <label htmlFor="cg">Category</label>

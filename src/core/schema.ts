@@ -1,3 +1,4 @@
+import './zodConfig';
 import { z } from 'zod';
 import type { SchemePack } from './types';
 import raw from './schemes/mahadbt-postmatric-obc.json';

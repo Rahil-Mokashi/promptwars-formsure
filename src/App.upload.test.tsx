@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { pdfFile, pngFile } from './test/files';
+import { mislabelledFile, pdfFile, pngFile } from './test/files';
+import { clickRun } from './test/ui';
 import { App } from './App';
 
 beforeAll(() => {
@@ -43,8 +44,8 @@ describe('upload validation in the browser', () => {
     await user.upload(screen.getByLabelText(/Aadhaar card/), new File(['x'], 'bad.gif', { type: 'image/gif' }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     await user.upload(screen.getByLabelText(/Aadhaar card/), pngFile('aadhaar.png'));
+    expect(await screen.findByText('aadhaar.png')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.getByText('aadhaar.png')).toBeInTheDocument();
     expect(screen.getByText('Uploaded')).toBeInTheDocument();
   });
 
@@ -130,5 +131,70 @@ describe('keyboard navigation', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(opener).toHaveFocus();
+  });
+});
+
+describe('upload security checks in the browser', () => {
+  it('rejects a file whose content does not match its type (a PDF renamed .png)', async () => {
+    const user = setup();
+    render(<App />);
+    await toUpload(user);
+    await user.upload(screen.getByLabelText(/Aadhaar card/), mislabelledFile('scan.png'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('scan.png: the content does not match its file type.');
+    expect(screen.queryByText('Uploaded')).toBeNull();
+  });
+
+  it('rejects a script renamed to .pdf', async () => {
+    const user = setup();
+    render(<App />);
+    await toUpload(user);
+    await user.upload(screen.getByLabelText(/Aadhaar card/), new File(['<script>alert(1)</script>'], 'evil.pdf', { type: 'application/pdf' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('evil.pdf: the content is not a PNG, JPG, WebP or PDF file.');
+  });
+
+  it('masks a 12-digit number in a file name, both in errors and on the card', async () => {
+    const user = setup();
+    render(<App />);
+    await toUpload(user);
+    await user.upload(screen.getByLabelText(/Aadhaar card/), new File(['x'], '1234 5678 9012.txt', { type: 'text/plain' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('XXXX XXXX 9012.txt');
+    await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('1234 5678 9012.pdf'));
+    expect(await screen.findByText('XXXX XXXX 9012.pdf')).toBeInTheDocument();
+    expect(document.body.textContent).not.toContain('1234 5678');
+  });
+});
+
+describe('form validation before a check runs', () => {
+  async function fill(user: ReturnType<typeof setup>, name: string, dob: string) {
+    await toUpload(user);
+    await user.type(screen.getByLabelText('Full name'), name);
+    await user.type(screen.getByLabelText('Date of birth'), dob);
+    await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('a.pdf'));
+    await clickRun(user);
+  }
+
+  it('shows a message next to an invalid name and does not start the check', async () => {
+    const user = setup();
+    render(<App />);
+    await fill(user, 'Aarav 123', '2006-03-14');
+    const name = screen.getByLabelText('Full name');
+    expect(name).toHaveAttribute('aria-invalid', 'true');
+    expect(name).toHaveAccessibleDescription('Use letters only, as on your documents.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Check the highlighted fields');
+    expect(screen.getByRole('heading', { name: 'Upload your documents' })).toBeInTheDocument();
+  });
+
+  it('rejects a date of birth in the future', async () => {
+    const user = setup();
+    render(<App />);
+    await fill(user, 'Aarav Patil', '2099-01-01');
+    expect(screen.getByLabelText('Date of birth')).toHaveAccessibleDescription('The date of birth cannot be in the future.');
+  });
+
+  it('limits the name field to 100 characters', async () => {
+    const user = setup();
+    render(<App />);
+    await toUpload(user);
+    expect(screen.getByLabelText('Full name')).toHaveAttribute('maxlength', '100');
   });
 });

@@ -1,4 +1,5 @@
 import { ExtractionError, RateLimitError, UnavailableError } from '../core/errors';
+import { maskAadhaar } from '../core/mask';
 import type { DocumentsBySlot, ExtractedDocument, ReadProgress, SlotId } from '../core/types';
 import type { ExtractOptions } from './extraction';
 
@@ -56,13 +57,13 @@ export async function readFiles(deps: ReadDeps): Promise<ReadOutcome> {
       await deps.pause(deps.gapMs);
       if (deps.isCancelled()) return { documents, failures, stopped: true };
     }
-    deps.onProgress({ ...base, detail: file.name });
+    deps.onProgress({ ...base, detail: maskAadhaar(file.name) });
     networkReads++;
 
     try {
       const doc = await deps.extract(file, {
         onBusy: (left) => {
-          if (!deps.isCancelled()) deps.onProgress({ ...base, detail: left > 0 ? `Gemini is busy, retrying in ${left}s…` : file.name });
+          if (!deps.isCancelled()) deps.onProgress({ ...base, detail: left > 0 ? `Gemini is busy, retrying in ${left}s…` : maskAadhaar(file.name) });
         },
       });
       if (deps.isCancelled()) return { documents, failures, stopped: true };
@@ -72,7 +73,7 @@ export async function readFiles(deps: ReadDeps): Promise<ReadOutcome> {
     } catch (err) {
       if (err instanceof UnavailableError) throw err;
       if (deps.isCancelled()) return { documents, failures, stopped: true };
-      const message = err instanceof ExtractionError ? err.message : `Could not read ${file.name}.`;
+      const message = err instanceof ExtractionError ? err.message : `Could not read ${maskAadhaar(file.name)}.`;
       failures[slotId] = message;
       deps.onSlotDone(slotId, message);
       if (err instanceof RateLimitError) return { documents, failures, stopped: true };

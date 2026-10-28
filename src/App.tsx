@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
+import { maskAadhaar } from './core/mask';
 import type { SlotId } from './core/types';
 import { pack } from './services/api';
 import { useFlow, type Flow } from './hooks/useFlow';
@@ -19,7 +20,7 @@ const PAGE_RISE_PX = 14;
 function fileNamesOf(flow: Flow): Partial<Record<SlotId, string>> {
   const names: Partial<Record<SlotId, string>> = {};
   const source: Partial<Record<SlotId, { name: string }>> = flow.sample ? flow.sample.files : flow.files;
-  for (const [slot, file] of Object.entries(source) as [SlotId, { name: string }][]) names[slot] = file.name;
+  for (const [slot, file] of Object.entries(source) as [SlotId, { name: string }][]) names[slot] = maskAadhaar(file.name);
   return names;
 }
 
@@ -35,7 +36,7 @@ function currentScreen(flow: Flow): ReactNode {
         <Upload
           pack={pack} lang={flow.lang} sample={flow.sample} form={flow.form} onForm={flow.setForm} files={flow.files}
           onFile={flow.onFile} slotStates={flow.reader.slotStates} retrying={flow.reader.retrying} onRetry={flow.reader.retry}
-          error={flow.error} onBack={() => flow.go('scheme')} onRun={flow.run}
+          error={flow.error} formErrors={flow.formErrors} validating={flow.validating} onBack={() => flow.go('scheme')} onRun={flow.run}
         />
       );
     case 'audit':

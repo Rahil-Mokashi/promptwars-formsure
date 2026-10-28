@@ -221,3 +221,6 @@ label.btn:focus-within{outline:3px solid #A5B4FC;outline-offset:2px}
 
 .slotnote{margin:0;font-size:12px;font-weight:600;color:#3F4759}
 .slotnote[data-failed="true"]{color:#9F1239}
+
+.fielderr{margin:0;font-size:13px;font-weight:600;color:#9F1239}
+.field input[aria-invalid="true"]{border-color:#BE123C}
