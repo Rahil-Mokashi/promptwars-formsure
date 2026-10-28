@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { pdfFile, pngFile } from './test/files';
 import { App } from './App';
 
 beforeAll(() => {
@@ -41,7 +42,7 @@ describe('upload validation in the browser', () => {
     await toUpload(user);
     await user.upload(screen.getByLabelText(/Aadhaar card/), new File(['x'], 'bad.gif', { type: 'image/gif' }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
-    await user.upload(screen.getByLabelText(/Aadhaar card/), new File(['x'], 'aadhaar.png', { type: 'image/png' }));
+    await user.upload(screen.getByLabelText(/Aadhaar card/), pngFile('aadhaar.png'));
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByText('aadhaar.png')).toBeInTheDocument();
     expect(screen.getByText('Uploaded')).toBeInTheDocument();
@@ -56,7 +57,7 @@ describe('upload validation in the browser', () => {
     await user.type(screen.getByLabelText('Full name'), 'Aarav Sunil Patil');
     await user.type(screen.getByLabelText('Date of birth'), '2006-03-14');
     expect(run).toBeDisabled();
-    await user.upload(screen.getByLabelText(/Aadhaar card/), new File(['x'], 'a.pdf', { type: 'application/pdf' }));
+    await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('a.pdf'));
     expect(run).toBeEnabled();
   });
 });

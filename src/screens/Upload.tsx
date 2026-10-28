@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { ApplicationForm, Lang, SampleResponse, SchemePack, SlotId } from '../core/types';
+import type { ApplicationForm, Lang, SampleResponse, SchemePack, SlotId, SlotReadState } from '../core/types';
 import { ArrowIcon, FileIcon, Tick } from '../icons';
 import { fadeUp, useReduce } from '../motion';
 import { slotNames } from '../names';
@@ -15,12 +15,17 @@ interface Props {
   onForm: (f: ApplicationForm) => void;
   files: Partial<Record<SlotId, File>>;
   onFile: (slot: SlotId, file: File | undefined) => void;
+  /** Per-slot reading / failed state from live reading. */
+  slotStates: Partial<Record<SlotId, SlotReadState>>;
+  /** True while a single-file retry runs (other retries wait). */
+  retrying: boolean;
+  onRetry: (slot: SlotId) => void;
   error: string | null;
   onBack: () => void;
   onRun: () => void;
 }
 
-export function Upload({ pack, lang, sample, form, onForm, files, onFile, error, onBack, onRun }: Props) {
+export function Upload({ pack, lang, sample, form, onForm, files, onFile, slotStates, retrying, onRetry, error, onBack, onRun }: Props) {
   const reduce = useReduce();
   const canRun = sample !== null || (form.fullName.trim() !== '' && form.dateOfBirth !== '' && Object.keys(files).length > 0);
 
@@ -36,6 +41,7 @@ export function Upload({ pack, lang, sample, form, onForm, files, onFile, error,
           {pack?.slots.map((slot, i) => {
             const n = slotNames(slot, lang);
             const file = files[slot.id];
+            const state = slotStates[slot.id];
             const shown = sample ? sample.files[slot.id] : file ? { name: file.name, size: kb(file.size) } : null;
             return (
               <motion.div key={slot.id} className="card slot" {...fadeUp(reduce, 0.12 + i * 0.06)}>
@@ -50,7 +56,13 @@ export function Upload({ pack, lang, sample, form, onForm, files, onFile, error,
                   <span className="mono">{shown?.name ?? 'No file chosen'}</span>
                   <span>{shown?.size}</span>
                 </div>
-                {shown && (
+                {state && (
+                  <p className="slotnote" role="status" data-failed={state.status === 'failed'}>{state.message}</p>
+                )}
+                {state?.status === 'failed' && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => onRetry(slot.id)} disabled={retrying}>Retry this file</button>
+                )}
+                {shown && !state && (
                   <span className="ok"><Tick reduce={reduce} />Uploaded</span>
                 )}
                 {!sample && (

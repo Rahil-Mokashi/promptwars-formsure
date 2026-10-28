@@ -105,3 +105,20 @@ export interface SampleResponse {
   fixedDocuments: DocumentsBySlot;
   files: Record<SlotId, { name: string; size: string }>;
 }
+
+/** Live reading progress shown on the audit screen. */
+export interface ReadProgress {
+  /** 1-based position of the file being read. */
+  index: number;
+  total: number;
+  slotId: SlotId;
+  /** What is happening now: the file name, a pause, or a busy countdown. */
+  detail: string;
+}
+
+/** What is going on with one slot's file while live reading. */
+export interface SlotReadState {
+  status: 'reading' | 'failed';
+  /** Safe to show: why it failed, or the busy countdown. */
+  message: string;
+}

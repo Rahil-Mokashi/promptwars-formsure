@@ -1,0 +1,32 @@
+/** Largest upload accepted, in bytes (5 MB). */
+export const MAX_FILE_BYTES = 5 * 1024 * 1024;
+
+/** MIME types accepted for upload. */
+export const ALLOWED_MIME_TYPES: readonly string[] = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'];
+
+/** Message shown when live reading is not configured or not reachable. */
+export const UNAVAILABLE_MESSAGE = 'Live reading unavailable, try the sample applicant';
+
+/** Default Gemini model; override with VITE_GEMINI_MODEL. */
+export const DEFAULT_MODEL = 'gemini-3.8-flash';
+
+/** How long one Gemini request may take before it counts as a timeout. */
+export const GEMINI_TIMEOUT_MS = 30_000;
+
+/** Seconds to wait before each retry after a 429 (free-tier rate limit): 10 s, 20 s, then 40 s. */
+export const RATE_LIMIT_BACKOFF_SECONDS: readonly number[] = [10, 20, 40];
+
+/** A timed-out request is retried this many times (schema errors are never retried). */
+export const TIMEOUT_RETRIES = 1;
+
+/** Pause between two files so the free-tier request rate stays low. */
+export const READ_GAP_MS = 4000;
+
+/** Client-side limiter: at most this many Gemini calls in any rolling window. */
+export const MAX_REQUESTS_PER_WINDOW = 8;
+
+/** Length of the limiter's rolling window (one minute). */
+export const RATE_WINDOW_MS = 60_000;
+
+/** Milliseconds in a second, used by countdowns. */
+export const SECOND_MS = 1000;

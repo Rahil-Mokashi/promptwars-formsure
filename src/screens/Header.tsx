@@ -1,7 +1,7 @@
 import type { Lang } from '../core/types';
+import type { Screen } from '../hooks/useFlow';
 import { ShieldIcon } from '../icons';
 
-export type Screen = 'landing' | 'scheme' | 'upload' | 'audit' | 'report' | 'ready';
 
 const STEP_OF: Partial<Record<Screen, number>> = { scheme: 1, upload: 2, audit: 3, report: 4, ready: 4 };
 const STEPS = ['Scheme', 'Upload', 'Check', 'Report'];

@@ -37,11 +37,21 @@ vi.mock('firebase/ai', () => ({
 
 const env = { VITE_FIREBASE_API_KEY: 'k', VITE_FIREBASE_PROJECT_ID: 'formsure-de6fa', VITE_FIREBASE_APP_ID: 'a' };
 
+describe('firebaseConfig', () => {
+  it('is null when the Firebase variables are missing and filled from the variables otherwise', async () => {
+    const { firebaseConfig, createFirebaseGenerate } = await import('./firebase');
+    expect(firebaseConfig({})).toBeNull();
+    expect(createFirebaseGenerate({})).toBeNull();
+    expect(firebaseConfig(env)?.authDomain).toBe('formsure-de6fa.firebaseapp.com');
+    expect(createFirebaseGenerate(env)).toBeTypeOf('function');
+  });
+});
+
 describe('createFirebaseGenerate (Firebase AI mocked)', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('calls Gemini through the Gemini Developer API backend with JSON output and a response schema', async () => {
-    const { createFirebaseGenerate } = await import('./live');
+    const { createFirebaseGenerate } = await import('./firebase');
     const generate = createFirebaseGenerate(env);
     const text = await generate!({ mimeType: 'application/pdf', data: 'QUJD', prompt: 'read it' });
 
@@ -66,7 +76,7 @@ describe('createFirebaseGenerate (Firebase AI mocked)', () => {
 
   it('uses VITE_GEMINI_MODEL and reuses an existing Firebase app', async () => {
     mocks.getApps.mockReturnValueOnce([{ name: 'existing' }]);
-    const { createFirebaseGenerate } = await import('./live');
+    const { createFirebaseGenerate } = await import('./firebase');
     await createFirebaseGenerate({ ...env, VITE_GEMINI_MODEL: 'gemini-custom' })!({ mimeType: 'image/png', data: 'x', prompt: 'p' });
     expect(mocks.initializeApp).not.toHaveBeenCalled();
     expect((mocks.getGenerativeModel.mock.calls[0]?.[1] as { model: string }).model).toBe('gemini-custom');
@@ -83,7 +93,7 @@ describe("App Check (reCAPTCHA Enterprise, mocked)", () => {
   });
 
   it("initialises App Check with the reCAPTCHA Enterprise provider before getAI", async () => {
-    const { createFirebaseGenerate } = await import("./live");
+    const { createFirebaseGenerate } = await import("./firebase");
     await createFirebaseGenerate({ ...env, VITE_RECAPTCHA_SITE_KEY: "site-key" })!(read);
 
     const [app, options] = mocks.initializeAppCheck.mock.calls[0] as [unknown, { provider: { siteKey: string }; isTokenAutoRefreshEnabled: boolean }];
@@ -96,14 +106,14 @@ describe("App Check (reCAPTCHA Enterprise, mocked)", () => {
   });
 
   it("is skipped when the site key is missing", async () => {
-    const { createFirebaseGenerate } = await import("./live");
+    const { createFirebaseGenerate } = await import("./firebase");
     await createFirebaseGenerate(env)!(read);
     expect(mocks.initializeAppCheck).not.toHaveBeenCalled();
     expect(mocks.getAI).toHaveBeenCalled();
   });
 
   it("enables the debug token in dev only", async () => {
-    const { createFirebaseGenerate } = await import("./live");
+    const { createFirebaseGenerate } = await import("./firebase");
     await createFirebaseGenerate({ ...env, VITE_RECAPTCHA_SITE_KEY: "k", DEV: true })!(read);
     expect(debugToken()).toBe(true);
   });
@@ -111,7 +121,7 @@ describe("App Check (reCAPTCHA Enterprise, mocked)", () => {
   it("initialises App Check once per app", async () => {
     const existing = { name: "existing-app" };
     mocks.getApps.mockReturnValue([existing]);
-    const { createFirebaseGenerate } = await import("./live");
+    const { createFirebaseGenerate } = await import("./firebase");
     const generate = createFirebaseGenerate({ ...env, VITE_RECAPTCHA_SITE_KEY: "k" })!;
     await generate(read);
     await generate(read);

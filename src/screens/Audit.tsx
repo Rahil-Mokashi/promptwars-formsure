@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState, type ReactNode } from 'react';
-import type { AuditReport, DocumentsBySlot, ExtractedDocument, SchemePack, SlotDef, SlotId } from '../core/types';
+import type { AuditReport, DocumentsBySlot, ExtractedDocument, ReadProgress, SchemePack, SlotDef, SlotId } from '../core/types';
 import { ArrowIcon, DashIcon, Spinner, Tick, XIcon } from '../icons';
 import { EASE, fadeUp, useReduce } from '../motion';
 
@@ -94,6 +94,7 @@ function JsonPanel({ doc, active, reduce }: { doc?: ExtractedDocument; active: b
 
 interface Props {
   pack: SchemePack;
+  progress?: ReadProgress | null;
   /** null while documents are being read and audited */
   report: AuditReport | null;
   docs: DocumentsBySlot;
@@ -103,7 +104,7 @@ interface Props {
   onReport: () => void;
 }
 
-export function Audit({ pack, report, docs, fileNames, sample, firstName, onReport }: Props) {
+export function Audit({ pack, report, progress, docs, fileNames, sample, firstName, onReport }: Props) {
   const reduce = useReduce();
   const [tick, setTick] = useState(0);
   const [cycle, setCycle] = useState(0);
@@ -119,21 +120,23 @@ export function Audit({ pack, report, docs, fileNames, sample, firstName, onRepo
     const t = setInterval(() => setTick((n) => n + 1), STEP_MS);
     return () => clearInterval(t);
   }, [report, reduce, skipped, done]);
-  // While documents are still being read, the scanner cycles through the slots on its own.
+  // Before the first file is read, the scanner cycles through the slots on its own.
   useEffect(() => {
-    if (report || reduce) return;
+    if (report || reduce || progress) return;
     const t = setInterval(() => setCycle((n) => n + 1), 900);
     return () => clearInterval(t);
-  }, [report, reduce]);
+  }, [report, reduce, progress]);
 
   const slots = pack.slots;
   const incomeIdx = Math.max(0, slots.findIndex((s) => s.id === 'income_certificate'));
-  const idx = done || reduce ? incomeIdx : report ? Math.min(slots.length - 1, Math.floor((step / total) * slots.length)) : cycle % slots.length;
+  const readingIdx = progress ? slots.findIndex((s) => s.id === progress.slotId) : -1;
+  const idx = readingIdx >= 0 && !report ? readingIdx : done || reduce ? incomeIdx : report ? Math.min(slots.length - 1, Math.floor((step / total) * slots.length)) : cycle % slots.length;
   const slot = slots[idx] as SlotDef;
   const doc = docs[slot.id];
   const pages = doc ? ` · ${doc.pageCount} ${doc.pageCount === 1 ? 'page' : 'pages'}` : '';
   const label = `${fileNames[slot.id] ?? slot.short}${pages}`;
-  const pct = total ? Math.round((step / total) * 100) : 0;
+  const reading = !report && !!progress;
+  const pct = reading ? Math.round(((progress.index - 1) / progress.total) * 100) : total ? Math.round((step / total) * 100) : 0;
 
   return (
     <main className="wrap page">
@@ -149,7 +152,14 @@ export function Audit({ pack, report, docs, fileNames, sample, firstName, onRepo
           </motion.button>
         )}
       </div>
-      <div className="progress" role="progressbar" aria-label="Checks completed" aria-valuemin={0} aria-valuemax={total || 8} aria-valuenow={step}>
+      <div
+        className="progress"
+        role="progressbar"
+        aria-label={reading ? 'Documents read' : 'Checks completed'}
+        aria-valuemin={0}
+        aria-valuemax={reading ? progress.total : total || 8}
+        aria-valuenow={reading ? progress.index - 1 : step}
+      >
         <motion.div initial={false} animate={{ width: `${pct}%` }} transition={{ duration: reduce ? 0 : 0.5, ease: EASE }} />
       </div>
       <div className="auditgrid">
@@ -171,8 +181,8 @@ export function Audit({ pack, report, docs, fileNames, sample, firstName, onRepo
               <li className="check running">
                 <span className="cicon ci-run"><Spinner reduce={reduce} /></span>
                 <div>
-                  <div className="clabel">Reading your documents</div>
-                  <div className="cdetail">Checking…</div>
+                  <div className="clabel">{progress ? `Reading ${progress.index} of ${progress.total}…` : 'Reading your documents'}</div>
+                  <div className="cdetail">{progress ? progress.detail : 'Checking…'}</div>
                 </div>
               </li>
             )}

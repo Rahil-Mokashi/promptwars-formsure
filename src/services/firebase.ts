@@ -1,9 +1,8 @@
-import type { Generate } from './extract';
+import { DEFAULT_MODEL, GEMINI_TIMEOUT_MS } from '../core/constants';
+import type { Generate } from './extraction';
 
-export const DEFAULT_MODEL = 'gemini-3.8-flash';
-const TIMEOUT_MS = 30_000;
-
-interface FirebaseEnv {
+/** The Vite environment variables this module reads. */
+export interface FirebaseEnv {
   VITE_FIREBASE_API_KEY?: string;
   VITE_FIREBASE_AUTH_DOMAIN?: string;
   VITE_FIREBASE_PROJECT_ID?: string;
@@ -83,7 +82,7 @@ export function createFirebaseGenerate(env: FirebaseEnv = import.meta.env as Fir
           }),
         },
       },
-      { timeout: TIMEOUT_MS },
+      { timeout: GEMINI_TIMEOUT_MS },
     );
     const result = await model.generateContent([{ type: 'inlineData', inlineData: { mimeType, data } }, { type: 'text', text: prompt }]);
     return result.response.text();

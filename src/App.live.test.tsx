@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { pdfFile } from './test/files';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 const doc = JSON.stringify({
@@ -10,7 +11,7 @@ const doc = JSON.stringify({
 });
 
 // Firebase AI is mocked: no network, no SDK.
-vi.mock('./core/live', () => ({ createFirebaseGenerate: () => async () => doc }));
+vi.mock('./services/firebase', () => ({ createFirebaseGenerate: () => async () => doc }));
 
 beforeAll(() => {
   (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ = true;
@@ -29,7 +30,7 @@ describe('live upload with mocked Firebase AI', () => {
     await user.upload(screen.getByLabelText(/Aadhaar card/), new File(['x'], 'a.txt', { type: 'text/plain' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/PNG, JPG, WebP or PDF/);
 
-    await user.upload(screen.getByLabelText(/Aadhaar card/), new File(['x'], 'aadhaar.pdf', { type: 'application/pdf' }));
+    await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('aadhaar.pdf'));
     await user.click(screen.getByRole('button', { name: /run formsure check/i }));
     expect(await screen.findByText('Checking Aarav’s application')).toBeInTheDocument();
     await user.click(await screen.findByRole('button', { name: /see readiness report/i }));

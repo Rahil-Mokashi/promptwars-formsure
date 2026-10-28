@@ -218,3 +218,6 @@ label.btn:focus-within{outline:3px solid #A5B4FC;outline-offset:2px}
   .noprint{display:none!important}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}.scan{display:none}}
+
+.slotnote{margin:0;font-size:12px;font-weight:600;color:#3F4759}
+.slotnote[data-failed="true"]{color:#9F1239}
