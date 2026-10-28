@@ -105,7 +105,7 @@ Not deployed by this repo's tooling. To deploy yourself:
 
 ```bash
 npx firebase-tools login
-# .firebaserc uses the project id "formsure"; change it to your project id
+# .firebaserc uses the project id "formsure-de6fa"; change it if you use another project
 npx firebase-tools deploy --only hosting     # predeploy runs npm run build
 ```
 
