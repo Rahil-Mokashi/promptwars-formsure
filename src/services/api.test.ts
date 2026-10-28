@@ -10,7 +10,7 @@ describe('audit on the sample applicant', () => {
   it('gives 50% with one failure for the error documents and 100% for the fixed ones', () => {
     const s = getSample(NOW);
     const bad = audit(s.form, s.errorDocuments, undefined, NOW);
-    expect([bad.readiness, bad.failed, bad.passed, bad.notEvaluated, bad.advisories]).toEqual([50, 1, 1, 3, 1]);
+    expect([bad.readiness, bad.failed, bad.passed, bad.notEvaluated, bad.advisories]).toEqual([50, 1, 1, 1, 2]);
     expect(audit(s.form, s.fixedDocuments, undefined, NOW).readiness).toBe(100);
   });
 

@@ -156,35 +156,36 @@ describe('numeric_max evaluator', () => {
 });
 
 describe('the shipped pack applies only rules backed by an official source or a college notice', () => {
-  it('scores exactly the two verified rules, runs pending rules as advisories and skips conflicting ones', () => {
+  it('scores exactly the two verified rules, runs the rest as advisories and skips the conflicting income limit', () => {
     const r = shippedAudit(sample.errorDocuments);
     const byStatus = (s: string) => r.checks.filter((c) => c.status === s && !c.advisory).map((c) => c.ruleId);
     expect(byStatus('pass')).toEqual(['right-document']);
     expect(byStatus('fail')).toEqual(['income-ncl']);
-    expect(byStatus('not_evaluated')).toEqual(['required-documents', 'income-financial-year', 'income-limit']);
-    expect(r.checks.filter((c) => c.advisory).map((c) => [c.ruleId, c.status])).toEqual([['name-match', 'fail'], ['dob-match', 'pass'], ['category-match', 'pass']]);
+    expect(byStatus('not_evaluated')).toEqual(['income-limit']);
+    expect(r.checks.filter((c) => c.advisory).map((c) => [c.ruleId, c.status])).toEqual([
+      ['required-documents', 'pass'], ['income-financial-year', 'fail'], ['name-match', 'fail'], ['dob-match', 'pass'], ['category-match', 'pass'],
+    ]);
   });
   it('an advisory failure is shown but never changes readiness or the scored totals', () => {
     const r = shippedAudit(sample.errorDocuments);
     expect(checkOf(r, 'name-match')).toMatchObject({ status: 'fail', advisory: true });
-    expect([r.readiness, r.failed, r.advisories]).toEqual([50, 1, 1]);
-    const conflicting = checkOf(r, 'income-financial-year');
-    expect(conflicting.advisory).toBe(false);
+    expect([r.readiness, r.failed, r.advisories]).toEqual([50, 1, 2]);
   });
-  it('a verified rule is never advisory', () => {
-    expect(shippedAudit(sample.errorDocuments).checks.filter((c) => !c.advisory).map((c) => c.ruleId)).toEqual(['required-documents', 'right-document', 'income-financial-year', 'income-ncl', 'income-limit']);
+  it('verified rules and a conflicting numeric limit are never advisory', () => {
+    expect(shippedAudit(sample.errorDocuments).checks.filter((c) => !c.advisory).map((c) => c.ruleId)).toEqual(['right-document', 'income-ncl', 'income-limit']);
   });
-  it('says why: sources conflict, or not verified yet', () => {
+  it('says why a rule is skipped, and what an advisory found', () => {
     const r = shippedAudit(sample.errorDocuments);
-    expect(checkOf(r, 'income-financial-year').detail).toBe('Sources conflict, rule skipped');
     expect(checkOf(r, 'income-limit').detail).toBe('Sources conflict, rule skipped');
+    expect(checkOf(r, 'income-financial-year')).toMatchObject({ advisory: true, detail: 'Issued 12 May 2025, FY 2025-26' });
     expect(checkOf(r, 'name-match').detail).toBe('Marksheet says Arav, not Aarav');
   });
-  it('sample numbers: 50% with one issue, then 100%', () => {
+  it('sample numbers: 50% with one scored issue and two advisories, then 100% with every check green but the income limit', () => {
     const bad = shippedAudit(sample.errorDocuments);
-    expect([bad.passed, bad.failed, bad.needsReview, bad.notEvaluated, bad.advisories, bad.readiness]).toEqual([1, 1, 0, 3, 1, 50]);
+    expect([bad.passed, bad.failed, bad.needsReview, bad.notEvaluated, bad.advisories, bad.readiness]).toEqual([1, 1, 0, 1, 2, 50]);
     const good = shippedAudit(fixed);
-    expect([good.passed, good.failed, good.needsReview, good.notEvaluated, good.advisories, good.readiness]).toEqual([2, 0, 0, 3, 0, 100]);
+    expect([good.passed, good.failed, good.needsReview, good.notEvaluated, good.advisories, good.readiness]).toEqual([2, 0, 0, 1, 0, 100]);
+    expect(good.checks.filter((c) => c.status === 'pass')).toHaveLength(7);
   });
   it('a rule marked verified but backed only by secondary sources is still not evaluated', () => {
     const secondaryOnly = { ...allRulesPack, rules: allRulesPack.rules.map((r) => (r.id === 'name-match' ? { ...r, evidence: r.evidence.filter((e) => e.kind === 'secondary') } : r)) };

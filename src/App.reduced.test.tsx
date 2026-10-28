@@ -22,13 +22,13 @@ describe('reduced-motion sample flow', () => {
     await toReport(user);
 
     expect(await screen.findByRole('heading', { name: 'Pre-check complete — 1 passed, 1 need fixing, 0 couldn’t be verified.' })).toBeInTheDocument();
-    // One scored failure plus one advisory warning (the marksheet name), which is shown but not scored.
-    expect(screen.getAllByRole('article')).toHaveLength(2);
-    expect(screen.getByText('Advisory')).toBeInTheDocument();
+    // One scored failure plus two advisory warnings (income certificate year, marksheet name), shown but not scored.
+    expect(screen.getAllByRole('article')).toHaveLength(3);
+    expect(screen.getAllByText('Advisory')).toHaveLength(2);
     // Count-up is skipped: the final number is there immediately.
     expect(screen.getByText('50%')).toBeInTheDocument();
-    expect(screen.getByText(/Not evaluated \(3\)/)).toBeInTheDocument();
-    expect(screen.getByText(/1 advisory warning/)).toBeInTheDocument();
+    expect(screen.getByText(/Not evaluated \(1\)/)).toBeInTheDocument();
+    expect(screen.getByText(/2 advisory warnings/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /re-check/i }));
     expect(await screen.findByRole('heading', { name: 'Pre-check complete' })).toBeInTheDocument();

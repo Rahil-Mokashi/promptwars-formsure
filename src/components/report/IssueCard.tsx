@@ -35,7 +35,7 @@ export function IssueCard({ check, index, lang, open, preview, reduce, onToggle 
           <span className="ititle" style={{ display: 'block' }}>{check.advisory ? `Check manually: ${check.issueTitle}` : review ? `Check manually: ${check.label}` : check.issueTitle}</span>
           <span className="idoc" style={{ display: 'block' }}>
             {check.issueDoc}
-            {check.advisory && ' · Not counted in your score: this rule’s sources are not official yet.'}
+            {check.advisory && ' · Not counted in your score: this rule’s sources are not official yet, or disagree on details.'}
           </span>
         </span>
         <ChevronIcon open={open} reduce={reduce} />

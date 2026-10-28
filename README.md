@@ -63,7 +63,7 @@ flowchart LR
 4. The rules engine runs over the extracted JSON. `readiness = passed ÷ applied checks × 100`; skipped rules are not counted.
 5. The report shows each issue with the evidence found, why it matters, the fix in the chosen language, a mini preview of the document with the problem field highlighted, and a link to the source of the rule.
 
-**Try sample applicant** runs the same engine on fictional data with no network and no Firebase config: **50 %** with 1 scored issue (income + non-creamy layer merged PDF) plus 1 advisory warning (the marksheet says *Arav*, the form says *Aarav*), then **100 %** after "I've fixed these, re-check" (under evidence-gated rules where only verified rules with official or college-notice evidence are evaluated).
+**Try sample applicant** runs the same engine on fictional data with no network and no Firebase config: **50 %** with 1 scored issue (income + non-creamy layer merged PDF) plus 2 advisory warnings (an income certificate from last financial year, and a marksheet that says *Arav* where the form says *Aarav*), then **100 %** with 7 of 8 checks green after "I've fixed these, re-check" (under evidence-gated rules where only verified rules with official or college-notice evidence are evaluated).
 
 ## The 8 rules
 
@@ -71,13 +71,13 @@ Each rule carries a register status:
 
 - **`verified`** (official source or college notice): applied and **scored**.
 - **`pending`** (secondary sources only): still run, but as an **advisory warning**. The student sees the result ("Check manually: name on marksheet"), but it never changes the readiness score or the pass/fail totals.
-- **`conflicting`** (sources disagree): skipped and shown as *not evaluated*, never guessed. This table matches the shipped JSON packs exactly (`npm run rules:register` regenerates [RULES.md](RULES.md) from them).
+- **`conflicting`** (sources disagree): run as an **advisory warning** too when the sources disagree only on details. A conflicting numeric limit (the OBC income limit: ₹1.5 L vs ₹2.5 L vs ₹8 L) is **skipped** and shown as *not evaluated*, because the threshold itself is unknown. This table matches the shipped JSON packs exactly (`npm run rules:register` regenerates [RULES.md](RULES.md) from them).
 
 | # | Rule | Checked by | OBC pack | SC pack |
 |---|------|------------|----------|---------|
-| 1 | Required documents present | Code | conflicting: skipped | conflicting: skipped |
+| 1 | Required documents present | Code | conflicting: advisory | conflicting: advisory |
 | 2 | Right document in each slot | AI reads, code decides | **verified: scored** | pending: advisory |
-| 3 | Income certificate issued in the current Indian financial year (1 Apr – 31 Mar, IST) | Code | conflicting: skipped | conflicting: skipped |
+| 3 | Income certificate issued in the current Indian financial year (1 Apr – 31 Mar, IST) | Code | conflicting: advisory | conflicting: advisory |
 | 4 | OBC / SBC / VJNT: income slot holds income certificate **and** non-creamy layer | AI reads, code decides | **verified: scored** | n/a |
 | 5 | Name matches the form across Aadhaar, income certificate, marksheet | AI reads, code decides | pending: advisory | pending: advisory |
 | 6 | Date of birth matches Aadhaar | Code | pending: advisory | pending: advisory |

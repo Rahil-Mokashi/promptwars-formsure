@@ -9,7 +9,7 @@ async function expectNoA11yViolations(page: Page): Promise<void> {
 
 test.use({ reducedMotion: 'reduce' });
 
-test('sample applicant: 50 % with one fix and one advisory warning, then 100 % after the re-check', async ({ page }) => {
+test('sample applicant: 50 % with one fix and two advisory warnings, then 100 % after the re-check', async ({ page }) => {
   await page.goto('/');
   await expectNoA11yViolations(page);
 
@@ -25,7 +25,7 @@ test('sample applicant: 50 % with one fix and one advisory warning, then 100 % a
   await page.getByRole('button', { name: /see readiness report/i }).click();
   await expect(page.getByRole('heading', { name: /1 passed, 1 need fixing/ })).toBeVisible();
   await expect(page.getByText('50%')).toBeVisible();
-  await expect(page.getByText('Advisory', { exact: true })).toBeVisible();
+  await expect(page.getByText('Advisory', { exact: true }).first()).toBeVisible();
   await expectNoA11yViolations(page);
 
   await page.getByRole('button', { name: 'मराठी' }).click();

@@ -18,8 +18,13 @@ const fillFix = (fix: Trio, year: string): Trio => ({ en: fillYear(fix.en, 'en',
 const skipReason = (rule: Rule): string =>
   rule.status === 'conflicting' ? 'Sources conflict, rule skipped' : 'Rule not verified yet, skipped';
 
-/** A pending rule (secondary sources only) still runs, as an advisory warning that never affects the score. */
-const isAdvisory = (rule: Rule): boolean => !isEvaluable(rule) && rule.status === 'pending';
+/**
+ * A rule that is not verified still runs as an advisory warning that never affects the score, when its check itself is
+ * not in doubt: pending rules (secondary sources only), and conflicting rules whose sources disagree only on details.
+ * A conflicting numeric limit is never applied, because the threshold itself is unknown.
+ */
+const isAdvisory = (rule: Rule): boolean =>
+  !isEvaluable(rule) && (rule.status === 'pending' || (rule.status === 'conflicting' && rule.type !== 'numeric_max'));
 
 /**
  * Checks an application against a scheme pack.

@@ -23,7 +23,11 @@ export interface ReportProps {
 /** Fifth screen: the score, every issue with evidence, why and the fix in the chosen language, and the passed checks. */
 export function Report({ pack, docs, report, lang, canRecheck, onReupload, onRecheck }: ReportProps) {
   const reduce = useReduce();
-  const issues = useMemo(() => report.checks.filter((c) => c.status === 'fail' || c.status === 'needs_review'), [report]);
+  // Scored issues first, advisory warnings after them.
+  const issues = useMemo(
+    () => report.checks.filter((c) => c.status === 'fail' || c.status === 'needs_review').sort((a, b) => Number(a.advisory) - Number(b.advisory)),
+    [report],
+  );
   const passed = useMemo(() => report.checks.filter((c) => c.status === 'pass'), [report]);
   const [open, setOpen] = useState<string>(issues[0]?.ruleId ?? '');
   const langName = LANGS.find((l) => l.code === lang)?.name ?? 'English';

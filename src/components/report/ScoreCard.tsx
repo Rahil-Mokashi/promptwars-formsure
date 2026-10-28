@@ -14,7 +14,7 @@ export function ScoreCard({ report }: { report: AuditReport }) {
       </div>
       {report.advisories > 0 && (
         <div className="skipnote">
-          <b>{report.advisories} advisory {report.advisories === 1 ? 'warning' : 'warnings'}.</b> These come from rules whose sources are not official yet. Check them by hand; they do not change your score.
+          <b>{report.advisories} advisory {report.advisories === 1 ? 'warning' : 'warnings'}.</b> These come from rules whose sources are not official yet, or disagree on details. Check them by hand; they do not change your score.
         </div>
       )}
       {notEvaluated.length > 0 && (
