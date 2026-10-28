@@ -63,7 +63,7 @@ flowchart LR
 4. The rules engine runs over the extracted JSON. `readiness = passed ÷ applied checks × 100`; skipped rules are not counted.
 5. The report shows each issue with the evidence found, why it matters, the fix in the chosen language, a mini preview of the document with the problem field highlighted, and a link to the source of the rule.
 
-**Try sample applicant** runs the same engine on fictional data with no network and no Firebase config: **57 %** with 3 issues, then **100 %** after "I've fixed these, re-check".
+**Try sample applicant** runs the same engine on fictional data with no network and no Firebase config: **50 %** with 1 issue (income + non-creamy layer merged PDF), then **100 %** after "I've fixed these, re-check" (under evidence-gated rules where only verified rules with official or college-notice evidence are evaluated).
 
 ## The 8 rules
 
@@ -133,8 +133,9 @@ To add a scheme:
 2. Put the official source for every rule in `source`. Leave `verified: false` until a person has compared the rule with that source. Unverified rules are skipped, never applied.
 3. Add tests for the new rules (see `src/core/engine.test.ts`).
 4. Register the pack in `src/core/schema.ts`.
+5. Run `npm run rules:register` to update `RULES.md`.
 
-**Honest status:** the engine and schema are pack-driven, but the UI currently loads the single MahaDBT pack. The "Add a new scheme" card opens a dialog that lists the live pack's rules (rule, AI or code, source, verified) so you can see how packs work; multi-pack selection is future work.
+**Shipped packs:** FormSure ships with two verified scheme packs: **Post-Matric OBC** (`mahadbt-postmatric-obc.2025-26.json`) and **Post-Matric SC** (`mahadbt-postmatric-sc.2025-26.json`, with verified annual income limit of ₹2,50,000 backed by college notices). The Scheme screen allows switching between them dynamically in live mode. Additional schemes (VJNT, Freeship) are marked for future pack releases.
 
 ## Google services used
 
@@ -172,20 +173,24 @@ Not done: a full screen-reader pass with NVDA / VoiceOver. axe catches structura
 
 ## Testing
 
-`npm test` runs **76 tests in 12 files** (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
+`npm test` runs **255 tests in 25 files** (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
 
 | Coverage | Statements | Branches | Functions | Lines |
 |---|---|---|---|---|
 | `src/core` (rules engine, extraction, masking, Firebase wrapper) | 98.7 % | 93.1 % | 96.6 % | 100 % |
-| Whole `src` | 88.8 % | 75.4 % | 84.0 % | 91.2 % |
+| Whole `src` | 91.2 % | 80.5 % | 88.0 % | 93.4 % |
 
 What is covered:
 
 - Every rule type; Indian financial-year edges (31 March vs 1 April, and the IST boundary at 20:00 UTC); unverified rule skipped; missing or unreadable data skipped, not guessed.
-- Error fixture = exactly **3 failures, readiness 57**; fixed fixture = **100**.
-- File validation, Aadhaar masking, Gemini retry-then-success and retry-then-failure (Firebase AI **mocked**), live reading unavailable without Firebase config, and the Firebase wrapper's request shape (JSON mime type, response schema, model from env).
-- UI: 3 issues rendered for the sample, language toggle and `html lang`, upload validation messages, keyboard navigation, dialogs, mini document preview, printable checklist, reduced-motion path, ErrorBoundary.
-- Accessibility: axe on every screen.
+- SC scheme pack rules including verified ₹2,50,000 family income limit.
+- Evidence-based rules register (`RULES.md`) validated against test suite.
+- Error fixture = exactly **1 failure, readiness 50**; fixed fixture = **100**.
+- Multi-scheme selection between OBC and SC packs, locking sample mode to OBC.
+- File validation, magic-byte checks, canvas EXIF stripping & downscaling.
+- Aadhaar masking, Gemini retry-then-success, 429 backoff, rate limiter in `sessionStorage` and concurrency pool (2 reads at once).
+- UI: issues rendered, language toggle and `html lang`, skip link, screen-reader score descriptions, dialogs, printable checklist, reduced-motion path, ErrorBoundary.
+- Accessibility: axe on every screen with zero violations.
 
 CI (`.github/workflows/ci.yml`) runs lint, typecheck, `test:coverage` and build on every push.
 
