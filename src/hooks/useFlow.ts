@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { UNAVAILABLE_MESSAGE } from '../core/constants';
 import { UnavailableError } from '../core/errors';
 import { batchProblem } from '../core/fileValidation';
@@ -6,15 +6,12 @@ import { validateForm } from '../core/formSchema';
 import type { ApplicationForm, AuditReport, DocumentsBySlot, Lang, SampleResponse, SlotId } from '../core/types';
 import { audit, getSample } from '../services/api';
 import { isLiveReadingAvailable } from '../services/firebase';
-import { prepareUpload } from '../services/uploadPipeline';
 import type { ReadOutcome } from '../services/readFiles';
+import { prepareUpload } from '../services/uploadPipeline';
+import { flowReducer, initialFlowState, type FormErrors, type Screen } from './flowReducer';
 import { useDocumentReader, type DocumentReader } from './useDocumentReader';
 
-/** The six screens, in the order of the design. */
-export type Screen = 'landing' | 'scheme' | 'upload' | 'audit' | 'report' | 'ready';
-
-/** Form before the applicant has typed anything. */
-export const EMPTY_FORM: ApplicationForm = { fullName: '', dateOfBirth: '', category: 'OBC', academicYear: '2026-27', applicationType: 'Fresh' };
+export { EMPTY_FORM, type FormErrors, type Screen } from './flowReducer';
 
 const failureMessage = (outcome: ReadOutcome): string => {
   const failures = Object.values(outcome.failures);
@@ -59,81 +56,56 @@ export interface Flow {
   restart: () => void;
 }
 
-/** Messages for invalid form fields. */
-export type FormErrors = Partial<Record<keyof ApplicationForm, string>>;
-
-/** The app's state machine: which screen, which applicant, which files, which report. */
+/**
+ * The app's controller. State changes go through {@link flowReducer}; this hook adds the side effects
+ * (cleaning files, reading with Gemini, running the rules) and dispatches their results as actions.
+ */
 export function useFlow(): Flow {
-  const [screen, setScreen] = useState<Screen>('landing');
-  const [lang, setLang] = useState<Lang>('en');
-  const [sample, setSample] = useState<SampleResponse | null>(null);
-  const [form, setForm] = useState<ApplicationForm>(EMPTY_FORM);
-  const [files, setFiles] = useState<Partial<Record<SlotId, File>>>({});
-  const [report, setReport] = useState<AuditReport | null>(null);
-  const [runId, setRunId] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [state, dispatch] = useReducer(flowReducer, initialFlowState);
   const [validating, setValidating] = useState(0);
-  const [consent, setConsent] = useState(false);
   const liveAvailable = useMemo(() => isLiveReadingAvailable(), []);
   const activeRun = useRef(0); // a newer run, or leaving the audit screen, cancels an older one
-  const reader = useDocumentReader(files);
+  const reader = useDocumentReader(state.files);
   const { cancel, reset, invalidate, readAll } = reader;
+  const { sample, form, files, consent } = state;
 
   useEffect(() => {
-    document.documentElement.lang = lang;
-  }, [lang]);
+    document.documentElement.lang = state.lang;
+  }, [state.lang]);
 
-  // Leaving the page drops every file and result held in memory (nothing is stored anywhere else).
+  // Leaving the page drops every file and result held in memory.
   useEffect(() => {
     const clear = () => {
       reset();
-      setFiles({});
+      for (const slotId of Object.keys(files) as SlotId[]) dispatch({ type: 'SET_FILE', slotId, file: undefined });
     };
     window.addEventListener('pagehide', clear);
     return () => window.removeEventListener('pagehide', clear);
-  }, [reset]);
+  }, [reset, files]);
 
   const go = useCallback(
-    (next: Screen) => {
-      if (next !== 'audit') {
+    (screen: Screen) => {
+      if (screen !== 'audit') {
         activeRun.current++;
         cancel();
       }
-      setError(null);
-      setScreen(next);
+      dispatch({ type: 'NAVIGATE', screen });
     },
     [cancel],
   );
 
-  const trySample = useCallback(() => {
-    const s = getSample();
-    setSample(s);
-    setForm(s.form);
-    setFiles({});
-    setConsent(false);
-    setScreen('scheme');
-  }, []);
+  const trySample = useCallback(() => dispatch({ type: 'SELECT_SAMPLE', sample: getSample() }), []);
 
   const start = useCallback(() => {
-    setSample(null);
-    setForm(EMPTY_FORM);
-    setFiles({});
-    setConsent(false);
     reset();
-    go('scheme');
-  }, [go, reset]);
+    dispatch({ type: 'SELECT_LIVE' });
+  }, [reset]);
 
   const onFile = useCallback(
     async (slotId: SlotId, file: File | undefined) => {
       if (!file) {
         invalidate(slotId);
-        setFiles((f) => {
-          const { [slotId]: _removed, ...rest } = f;
-          void _removed;
-          return rest;
-        });
-        setError(null);
+        dispatch({ type: 'SET_FILE', slotId, file: undefined });
         return;
       }
       setValidating((n) => n + 1);
@@ -141,10 +113,12 @@ export function useFlow(): Flow {
         const others = Object.entries(files).filter(([id]) => id !== slotId).map(([, f]) => f.size);
         const batch = batchProblem([...others, file.size]);
         const prepared = batch ? { error: batch } : await prepareUpload(file);
-        setError(prepared.error ?? null);
-        if (!prepared.file) return;
+        if (!prepared.file) {
+          dispatch({ type: 'FILE_REJECTED', message: prepared.error ?? '' });
+          return;
+        }
         invalidate(slotId);
-        setFiles((f) => ({ ...f, [slotId]: prepared.file }));
+        dispatch({ type: 'SET_FILE', slotId, file: prepared.file });
       } finally {
         setValidating((n) => n - 1);
       }
@@ -156,55 +130,49 @@ export function useFlow(): Flow {
     if (!sample && !consent) return;
     const checked = validateForm(form);
     if (!checked.ok) {
-      setFormErrors(checked.errors);
-      setError('Check the highlighted fields, then run the check again.');
+      dispatch({ type: 'RUN_AUDIT', run: { stage: 'invalid', formErrors: checked.errors } });
       return;
     }
-    setFormErrors({});
-    setForm(checked.form);
+    dispatch({ type: 'SET_FORM', form: checked.form });
     const me = ++activeRun.current;
     const current = () => activeRun.current === me;
-    setError(null);
-    setReport(null);
-    setRunId((n) => n + 1);
-    setScreen('audit');
+    dispatch({ type: 'RUN_AUDIT', run: { stage: 'started' } });
     try {
       if (sample) {
-        setReport(audit(checked.form, sample.errorDocuments));
+        dispatch({ type: 'RUN_AUDIT', run: { stage: 'finished', report: audit(checked.form, sample.errorDocuments) } });
         return;
       }
       const outcome = await readAll();
       if (!current()) return;
       if (Object.keys(outcome.failures).length > 0) {
-        setError(failureMessage(outcome));
-        setScreen('upload');
+        dispatch({ type: 'RUN_AUDIT', run: { stage: 'failed', error: failureMessage(outcome) } });
         return;
       }
-      setReport(audit(checked.form, outcome.documents));
+      dispatch({ type: 'RUN_AUDIT', run: { stage: 'finished', report: audit(checked.form, outcome.documents) } });
     } catch (e) {
-      if (!current()) return;
-      setError(messageOf(e));
-      setScreen('upload');
+      if (current()) dispatch({ type: 'RUN_AUDIT', run: { stage: 'failed', error: messageOf(e) } });
     }
   }, [consent, form, readAll, sample]);
 
   const recheck = useCallback(() => {
     if (!sample) return go('upload');
-    const fixed = audit(form, sample.fixedDocuments);
-    setReport(fixed);
-    setScreen(fixed.failed === 0 && fixed.needsReview === 0 ? 'ready' : 'report');
+    dispatch({ type: 'RECHECK', report: audit(form, sample.fixedDocuments) });
   }, [form, go, sample]);
 
   const restart = useCallback(() => {
-    setSample(null);
-    setForm(EMPTY_FORM);
-    setFiles({});
-    setConsent(false);
     reset();
-    setReport(null);
-    go('landing');
-  }, [go, reset]);
+    activeRun.current++;
+    cancel();
+    dispatch({ type: 'RESTART' });
+  }, [cancel, reset]);
 
-  const docs = sample ? sample.errorDocuments : reader.docs;
-  return { screen, lang, sample, form, files, error, formErrors, validating: validating > 0, consent, setConsent, liveAvailable, report, runId, docs, reader, setLang, setForm, go, trySample, start, onFile, run, recheck, restart };
+  const setLang = useCallback((lang: Lang) => dispatch({ type: 'SET_LANG', lang }), []);
+  const setForm = useCallback((next: ApplicationForm) => dispatch({ type: 'SET_FORM', form: next }), []);
+  const setConsent = useCallback((value: boolean) => dispatch({ type: 'SET_CONSENT', consent: value }), []);
+
+  return {
+    screen: state.screen, lang: state.lang, sample, form, files, error: state.error, formErrors: state.formErrors,
+    validating: validating > 0, consent, setConsent, liveAvailable, report: state.report, runId: state.runId,
+    docs: sample ? sample.errorDocuments : reader.docs, reader, setLang, setForm, go, trySample, start, onFile, run, recheck, restart,
+  };
 }
