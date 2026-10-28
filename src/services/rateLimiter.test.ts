@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { RateLimitError } from '../core/errors';
 import { createRateLimiter } from './rateLimiter';
 
 /** A fake clock: `sleep` advances time instead of waiting. */
@@ -58,5 +59,31 @@ describe('createRateLimiter (max calls per minute)', () => {
   it('uses the real clock and timers by default', async () => {
     const limiter = createRateLimiter();
     await expect(limiter.acquire()).resolves.toBeUndefined();
+  });
+});
+
+describe('createRateLimiter: daily cap (in memory only)', () => {
+  it('allows 60 calls in a day and then refuses, without waiting for hours', async () => {
+    const clock = fakeClock();
+    const limiter = createRateLimiter({ maxRequests: 100, windowMs: 1000, dailyMax: 60, ...clock });
+    for (let i = 0; i < 60; i++) await limiter.acquire();
+    await expect(limiter.acquire()).rejects.toBeInstanceOf(RateLimitError);
+    await expect(limiter.acquire()).rejects.toThrow(/today’s limit/);
+    expect(clock.sleeps).toEqual([]);
+  });
+  it('frees the daily budget after 24 hours', async () => {
+    const clock = fakeClock();
+    const limiter = createRateLimiter({ dailyMax: 2, ...clock });
+    await limiter.acquire();
+    await limiter.acquire();
+    await expect(limiter.acquire()).rejects.toBeInstanceOf(RateLimitError);
+    clock.advance(24 * 60 * 60 * 1000);
+    await expect(limiter.acquire()).resolves.toBeUndefined();
+  });
+  it('writes nothing to browser storage', async () => {
+    const set = vi.spyOn(Storage.prototype, 'setItem');
+    await createRateLimiter({ now: () => 0, sleep: async () => undefined }).acquire();
+    expect(set).not.toHaveBeenCalled();
+    set.mockRestore();
   });
 });

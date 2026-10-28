@@ -60,12 +60,13 @@ describe('extractDocument: failures that must not be retried', () => {
     },
   );
 
-  it('does not retry other errors, such as a 401, and logs a masked description of the cause', async () => {
+  it('does not retry other errors, such as a 401, and logs only the error name, never the provider message', async () => {
     const spy = quiet();
     const generate = vi.fn<Generate>().mockRejectedValue(new Error('Firebase App Check token is invalid, id 1234 5678 9012'));
     await expect(extractDocument(generate, pngFile(), noSleep)).rejects.toBeInstanceOf(ExtractionError);
     expect(generate).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith('Gemini request failed:', 'Error: Firebase App Check token is invalid, id XXXX XXXX 9012');
+    expect(spy).toHaveBeenCalledWith('Gemini request failed:', 'Error');
+    expect(JSON.stringify(spy.mock.calls)).not.toMatch(/App Check|1234/);
   });
 
   it('never logs the file content or the request', async () => {

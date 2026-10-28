@@ -23,16 +23,21 @@ describe('maskDeep', () => {
 });
 
 describe('describeError', () => {
-  it('describes name, status and a masked message', () => {
-    const err = Object.assign(new Error('failed for 1234 5678 9012'), { name: 'FirebaseError', status: 429 });
-    expect(describeError(err)).toBe('FirebaseError 429: failed for XXXX XXXX 9012');
+  it('describes name, status and code, and never the provider message', () => {
+    const err = Object.assign(new Error('failed for 1234 5678 9012 Aarav Patil'), { name: 'FirebaseError', status: 429, code: 'ai/fetch-error' });
+    const text = describeError(err);
+    expect(text).toBe('FirebaseError status 429 code ai/fetch-error');
+    expect(text).not.toMatch(/Aarav|1234/);
+  });
+  it('reads the status the Firebase SDK keeps in customErrorData', () => {
+    expect(describeError({ name: 'FirebaseError', customErrorData: { status: 503 } })).toBe('FirebaseError status 503');
+  });
+  it('masks a 12-digit number that appears in a code', () => {
+    expect(describeError({ name: 'E', code: 'id-123456789012' })).toBe('E code id-XXXX XXXX 9012');
   });
   it('copes with non-error values', () => {
     expect(describeError(null)).toBe('unknown error');
     expect(describeError('boom')).toBe('unknown error');
-    expect(describeError({})).toBe('Error: ');
-  });
-  it('truncates very long messages', () => {
-    expect(describeError(new Error('x'.repeat(1000))).length).toBeLessThan(330);
+    expect(describeError({})).toBe('Error');
   });
 });

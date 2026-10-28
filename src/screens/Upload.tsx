@@ -2,6 +2,7 @@ import { ArrowIcon } from '../components/icons';
 import { FormPanel } from '../components/upload/FormPanel';
 import { SlotCard } from '../components/upload/SlotCard';
 import type { ApplicationForm, Lang, SampleResponse, SchemePack, SlotId, SlotReadState } from '../core/types';
+import { UNAVAILABLE_MESSAGE } from '../core/constants';
 import type { FormErrors } from '../hooks/useFlow';
 
 /** Props of {@link Upload}. */
@@ -24,15 +25,20 @@ export interface UploadProps {
   formErrors: FormErrors;
   /** A chosen file is still being checked. */
   validating: boolean;
+  /** The applicant agreed to send documents to Gemini. */
+  consent: boolean;
+  onConsent: (consent: boolean) => void;
+  /** Live reading is configured and allowed. */
+  liveAvailable: boolean;
   onBack: () => void;
   onRun: () => void;
 }
 
 /** Third screen: one file per slot, the form details, and the button that starts the check. */
 export function Upload(props: UploadProps) {
-  const { pack, lang, sample, form, files, slotStates, retrying, error, formErrors, validating } = props;
+  const { pack, lang, sample, form, files, slotStates, retrying, error, formErrors, validating, consent, liveAvailable } = props;
   const ready = form.fullName.trim() !== '' && form.dateOfBirth !== '' && Object.keys(files).length > 0;
-  const canRun = !validating && (sample !== null || ready);
+  const canRun = !validating && (sample !== null || (ready && liveAvailable && consent));
 
   return (
     <main className="wrap page" id="main" tabIndex={-1}>
@@ -53,6 +59,13 @@ export function Upload(props: UploadProps) {
         </div>
         <FormPanel form={form} errors={formErrors} readOnly={sample !== null} onForm={props.onForm} />
       </div>
+      {!sample && liveAvailable && (
+        <label className="consent">
+          <input type="checkbox" checked={consent} onChange={(e) => props.onConsent(e.target.checked)} />
+          <span>Your documents are sent to Google Gemini via Firebase only to read them. Nothing is stored.</span>
+        </label>
+      )}
+      {!sample && !liveAvailable && <p className="errnote" role="status">{UNAVAILABLE_MESSAGE}</p>}
       {error && <p className="errnote" role="alert">{error}</p>}
       <div className="actions">
         <button className="btn btn-ghost" onClick={props.onBack}>Back</button>

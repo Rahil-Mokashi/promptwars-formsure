@@ -8,14 +8,15 @@ export const maskAadhaar = (text: string): string => text.replace(TWELVE_DIGITS,
 export const maskDeep = <T>(value: T): T => JSON.parse(maskAadhaar(JSON.stringify(value))) as T;
 
 /**
- * One-line, log-safe description of an error: its name, HTTP status when present and a masked message.
- * Never includes request or document content.
+ * One-line, log-safe description of an error: its name, HTTP status and error code. It never includes the provider's
+ * message, the request, the document or the model's answer, because any of those can contain personal data.
  */
 export function describeError(err: unknown): string {
   if (typeof err !== 'object' || err === null) return 'unknown error';
-  const e = err as { name?: unknown; status?: unknown; message?: unknown };
+  const e = err as { name?: unknown; status?: unknown; code?: unknown; customErrorData?: { status?: unknown } };
   const parts = [typeof e.name === 'string' ? e.name : 'Error'];
-  if (typeof e.status === 'number') parts.push(String(e.status));
-  const message = typeof e.message === 'string' ? maskAadhaar(e.message).slice(0, 300) : '';
-  return `${parts.join(' ')}: ${message}`;
+  const status = typeof e.status === 'number' ? e.status : e.customErrorData?.status;
+  if (typeof status === 'number') parts.push(`status ${status}`);
+  if (typeof e.code === 'string') parts.push(`code ${maskAadhaar(e.code).slice(0, 60)}`);
+  return parts.join(' ');
 }

@@ -27,7 +27,8 @@ describe('Confetti', () => {
     unmount();
   });
 
-  it('does nothing without a 2d context (jsdom)', () => {
+  it('does nothing without a 2d context', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const { container } = render(<Confetti />);
     expect(container.querySelector('canvas')).not.toBeNull();
   });

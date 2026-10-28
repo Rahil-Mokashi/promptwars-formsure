@@ -12,7 +12,7 @@ const doc = JSON.stringify({
 });
 
 // Firebase AI is mocked: no network, no SDK.
-vi.mock('./services/firebase', () => ({ createFirebaseGenerate: () => async () => doc }));
+vi.mock('./services/firebase', () => ({ createFirebaseGenerate: () => async () => doc, isLiveReadingAvailable: () => true }));
 
 beforeAll(() => {
   (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ = true;

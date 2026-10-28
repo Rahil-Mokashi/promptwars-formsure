@@ -1,4 +1,4 @@
-import { RATE_LIMIT_BACKOFF_SECONDS, SECOND_MS, TIMEOUT_RETRIES } from '../core/constants';
+import { MAX_PDF_PAGES, RATE_LIMIT_BACKOFF_SECONDS, SECOND_MS, TIMEOUT_RETRIES } from '../core/constants';
 import { ExtractionError, RateLimitError } from '../core/errors';
 import { extractedSchema } from '../core/extractSchema';
 import { validateUpload } from '../core/fileValidation';
@@ -51,6 +51,8 @@ const toBase64 = (file: Blob): Promise<string> =>
 
 const unreadable = (file: File) => new ExtractionError(`Could not read ${maskAadhaar(file.name)}. Try a clearer scan or a different file.`);
 
+class TooManyPages extends Error {}
+
 /** Counts down `seconds`, reporting each second through `onBusy`. */
 async function waitWithCountdown(seconds: number, options: ExtractOptions): Promise<void> {
   const sleep = options.sleep ?? realSleep;
@@ -83,6 +85,7 @@ export async function extractDocument(generate: Generate, file: File, options: E
       await options.beforeRequest?.();
       text = await generate({ mimeType: file.type, data, prompt: EXTRACTION_PROMPT });
     } catch (err) {
+      if (err instanceof RateLimitError) throw err; // the local daily cap: no point retrying
       console.error('Gemini request failed:', describeError(err));
       if (isRateLimit(err)) {
         const wait = RATE_LIMIT_BACKOFF_SECONDS[rateLimitRetries++];
@@ -94,8 +97,11 @@ export async function extractDocument(generate: Generate, file: File, options: E
       throw unreadable(file);
     }
     try {
-      return maskDeep(extractedSchema.parse(JSON.parse(text)));
+      const doc = maskDeep(extractedSchema.parse(JSON.parse(text)));
+      if (file.type === 'application/pdf' && doc.pageCount > MAX_PDF_PAGES) throw new TooManyPages();
+      return doc;
     } catch (err) {
+      if (err instanceof TooManyPages) throw new ExtractionError(`${maskAadhaar(file.name)}: the PDF has more than ${MAX_PDF_PAGES} pages.`);
       console.error('Gemini returned unusable JSON:', describeError(err));
       throw unreadable(file);
     }

@@ -39,3 +39,30 @@ export const FIRST_BIRTH_YEAR = 1900;
 
 /** Milliseconds in a second, used by countdowns. */
 export const SECOND_MS = 1000;
+
+/** Most files that can be selected at once. */
+export const MAX_FILES = 10;
+
+/** Largest total size of all selected files, in bytes (25 MB). */
+export const MAX_TOTAL_BYTES = 25 * 1024 * 1024;
+
+/** Largest image width or height accepted, in pixels. */
+export const MAX_IMAGE_SIDE_PX = 6000;
+
+/** Images whose long side is above this are scaled down to it before sending (never below: scans must stay readable). */
+export const DOWNSCALE_ABOVE_PX = 2400;
+
+/** Most pages a PDF may have. */
+export const MAX_PDF_PAGES = 10;
+
+/** Quality used when re-encoding JPEG and WebP images. */
+export const REENCODE_QUALITY = 0.92;
+
+/** How many bytes at the end of a PDF are searched for the end-of-file marker. */
+export const PDF_TAIL_BYTES = 2048;
+
+/** A device may make this many Gemini calls per day (kept in memory only: nothing is written to browser storage). */
+export const MAX_REQUESTS_PER_DAY = 60;
+
+/** Length of the daily window. */
+export const DAY_MS = 24 * 60 * 60 * 1000;

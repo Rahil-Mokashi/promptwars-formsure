@@ -37,7 +37,7 @@ function currentScreen(flow: Flow): ReactNode {
         <Upload
           pack={pack} lang={flow.lang} sample={flow.sample} form={flow.form} onForm={flow.setForm} files={flow.files}
           onFile={flow.onFile} slotStates={flow.reader.slotStates} retrying={flow.reader.retrying} onRetry={flow.reader.retry}
-          error={flow.error} formErrors={flow.formErrors} validating={flow.validating} onBack={() => flow.go('scheme')} onRun={flow.run}
+          error={flow.error} formErrors={flow.formErrors} validating={flow.validating} consent={flow.consent} onConsent={flow.setConsent} liveAvailable={flow.liveAvailable} onBack={() => flow.go('scheme')} onRun={flow.run}
         />
       );
     case 'audit':

@@ -1,5 +1,6 @@
 import { DEFAULT_MODEL, GEMINI_TIMEOUT_MS } from '../core/constants';
 import type { Generate } from './extraction';
+import { SYSTEM_INSTRUCTION } from './prompt';
 
 /** The Vite environment variables this module reads. */
 export interface FirebaseEnv {
@@ -12,6 +13,8 @@ export interface FirebaseEnv {
   VITE_GEMINI_MODEL?: string;
   VITE_RECAPTCHA_SITE_KEY?: string;
   DEV?: boolean;
+  /** True in a production build. */
+  PROD?: boolean;
 }
 
 // initializeAppCheck throws if it runs twice for the same app, so remember which apps have it.
@@ -32,12 +35,25 @@ export function firebaseConfig(env: FirebaseEnv = import.meta.env as FirebaseEnv
 }
 
 /**
+ * Why live reading is off, or null when it is on. It fails closed: in a production build both the Firebase config and
+ * the App Check site key are required, so a build without App Check can never call Gemini.
+ */
+export function liveReadingProblem(env: FirebaseEnv = import.meta.env as FirebaseEnv): string | null {
+  if (!firebaseConfig(env)) return 'Firebase is not configured';
+  if (env.PROD && !env.VITE_RECAPTCHA_SITE_KEY) return 'App Check is not configured';
+  return null;
+}
+
+/** True when live reading can be used. */
+export const isLiveReadingAvailable = (env: FirebaseEnv = import.meta.env as FirebaseEnv): boolean => liveReadingProblem(env) === null;
+
+/**
  * Gemini through Firebase AI Logic (Gemini Developer API backend), called straight from the browser.
- * Returns null when Firebase is not configured. The SDK is imported lazily so the sample flow stays light.
+ * Returns null when live reading is not available (see {@link liveReadingProblem}). The SDK is imported lazily so the sample flow stays light.
  */
 export function createFirebaseGenerate(env: FirebaseEnv = import.meta.env as FirebaseEnv): Generate | null {
   const config = firebaseConfig(env);
-  if (!config) return null;
+  if (!config || liveReadingProblem(env) !== null) return null;
   const modelName = env.VITE_GEMINI_MODEL || DEFAULT_MODEL;
 
   return async ({ mimeType, data, prompt }) => {
@@ -60,6 +76,7 @@ export function createFirebaseGenerate(env: FirebaseEnv = import.meta.env as Fir
       getAI(app, { backend: new GoogleAIBackend() }),
       {
         model: modelName,
+        systemInstruction: SYSTEM_INSTRUCTION,
         generationConfig: {
           responseMimeType: 'application/json',
           temperature: 0,

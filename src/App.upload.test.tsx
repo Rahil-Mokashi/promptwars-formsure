@@ -9,6 +9,8 @@ beforeAll(() => {
   (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ = true;
 });
 
+vi.mock('./services/firebase', async (importOriginal) => ({ ...(await importOriginal<typeof import('./services/firebase')>()), isLiveReadingAvailable: () => true }));
+
 // applyAccept:false lets us push a wrong file type through, as the "All files" picker option would.
 const setup = () => userEvent.setup({ applyAccept: false });
 
@@ -59,6 +61,9 @@ describe('upload validation in the browser', () => {
     await user.type(screen.getByLabelText('Date of birth'), '2006-03-14');
     expect(run).toBeDisabled();
     await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('a.pdf'));
+    await screen.findByText('a.pdf');
+    expect(run).toBeDisabled(); // still no consent
+    await user.click(screen.getByRole('checkbox', { name: /sent to Google Gemini via Firebase only to read them/ }));
     expect(run).toBeEnabled();
   });
 });

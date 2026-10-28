@@ -6,10 +6,11 @@ import { Audit } from './screens/Audit';
 import { pack } from './services/api';
 import type { GenerateRequest } from './services/extraction';
 import { MARKSHEET_JSON, pdfFile, tooManyRequests } from './test/files';
+import { clickRun } from './test/ui';
 
 // Firebase AI is mocked, and the 4 s gap between files is switched off for the test.
 const hoisted = vi.hoisted(() => ({ generate: vi.fn<(req: GenerateRequest) => Promise<string>>() }));
-vi.mock('./services/firebase', () => ({ createFirebaseGenerate: () => hoisted.generate }));
+vi.mock('./services/firebase', () => ({ createFirebaseGenerate: () => hoisted.generate, isLiveReadingAvailable: () => true }));
 // The shared 8-calls-a-minute limiter is covered in rateLimiter.test.ts; here it must not slow the tests down.
 vi.mock('./services/rateLimiter', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./services/rateLimiter')>()),
@@ -38,7 +39,7 @@ async function chooseThreeAndRun(user: User) {
   await user.upload(screen.getByLabelText(/OBC caste certificate/), pdfFile('b-caste.pdf'));
   await user.upload(screen.getByLabelText(/Income certificate \+ non-creamy layer/), pdfFile('c-income.pdf'));
   await waitFor(() => expect(screen.getAllByText('Uploaded')).toHaveLength(3)); // file checks finish asynchronously
-  await user.click(screen.getByRole('button', { name: /run formsure check/i }));
+  await clickRun(user);
 }
 
 describe('live reading: one file at a time, with visible progress', () => {
@@ -130,7 +131,7 @@ describe('"Retry this file"', () => {
     expect(hoisted.generate).toHaveBeenCalledTimes(4); // only the failed file
 
     // Running again reuses every cached document: no new Gemini calls.
-    await user.click(screen.getByRole('button', { name: /run formsure check/i }));
+    await clickRun(user);
     expect(await screen.findByRole('button', { name: /see readiness report/i })).toBeInTheDocument();
     expect(hoisted.generate).toHaveBeenCalledTimes(4);
   });
@@ -157,7 +158,7 @@ describe('"Retry this file"', () => {
     await user.upload(screen.getByLabelText(/OBC caste certificate/), pdfFile('b-caste-v2.pdf'));
     expect(screen.queryByRole('button', { name: /retry this file/i })).toBeNull();
     hoisted.generate.mockResolvedValueOnce(MARKSHEET_JSON);
-    await user.click(screen.getByRole('button', { name: /run formsure check/i }));
+    await clickRun(user);
     expect(await screen.findByRole('button', { name: /see readiness report/i })).toBeInTheDocument();
     expect(hoisted.generate).toHaveBeenCalledTimes(4);
   });

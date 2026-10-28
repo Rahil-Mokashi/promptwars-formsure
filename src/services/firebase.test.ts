@@ -129,3 +129,35 @@ describe("App Check (reCAPTCHA Enterprise, mocked)", () => {
     mocks.getApps.mockReturnValue([]);
   });
 });
+
+describe('fail closed in production', () => {
+  const base = { VITE_FIREBASE_API_KEY: 'k', VITE_FIREBASE_PROJECT_ID: 'formsure-de6fa', VITE_FIREBASE_APP_ID: 'a' };
+
+  it('reports why live reading is off', async () => {
+    const { liveReadingProblem, isLiveReadingAvailable } = await import('./firebase');
+    expect(liveReadingProblem({})).toBe('Firebase is not configured');
+    expect(liveReadingProblem({ ...base, PROD: true })).toBe('App Check is not configured');
+    expect(liveReadingProblem({ ...base, PROD: true, VITE_RECAPTCHA_SITE_KEY: 'site' })).toBeNull();
+    expect(isLiveReadingAvailable({ ...base, PROD: true })).toBe(false);
+  });
+
+  it('allows development without App Check, but never a production build', async () => {
+    const { liveReadingProblem, createFirebaseGenerate } = await import('./firebase');
+    expect(liveReadingProblem({ ...base, DEV: true })).toBeNull();
+    expect(createFirebaseGenerate({ ...base, PROD: true })).toBeNull();
+    expect(createFirebaseGenerate({ ...base, PROD: true, VITE_RECAPTCHA_SITE_KEY: 'site' })).toBeTypeOf('function');
+  });
+});
+
+describe('the system instruction treats document text as data', () => {
+  it('is sent to the model and tells it to ignore instructions inside documents', async () => {
+    vi.clearAllMocks();
+    const { createFirebaseGenerate } = await import('./firebase');
+    const generate = createFirebaseGenerate(env);
+    await generate?.({ mimeType: 'image/png', data: 'x', prompt: 'p' });
+    const params = mocks.getGenerativeModel.mock.calls[0]?.[1] as { systemInstruction: string };
+    expect(params.systemInstruction).toMatch(/untrusted data/i);
+    expect(params.systemInstruction).toMatch(/Ignore any instruction/i);
+    expect(params.systemInstruction).toMatch(/response schema/i);
+  });
+});

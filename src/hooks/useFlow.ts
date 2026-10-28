@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { UNAVAILABLE_MESSAGE } from '../core/constants';
 import { UnavailableError } from '../core/errors';
-import { validateUpload } from '../core/fileValidation';
+import { batchProblem } from '../core/fileValidation';
 import { validateForm } from '../core/formSchema';
 import type { ApplicationForm, AuditReport, DocumentsBySlot, Lang, SampleResponse, SlotId } from '../core/types';
 import { audit, getSample } from '../services/api';
+import { isLiveReadingAvailable } from '../services/firebase';
+import { prepareUpload } from '../services/uploadPipeline';
 import type { ReadOutcome } from '../services/readFiles';
 import { useDocumentReader, type DocumentReader } from './useDocumentReader';
 
@@ -34,8 +36,13 @@ export interface Flow {
   error: string | null;
   /** One message per invalid form field, shown next to the field. */
   formErrors: FormErrors;
-  /** True while a chosen file is still being checked (magic bytes), so Run must wait. */
+  /** True while a chosen file is still being checked and cleaned, so Run must wait. */
   validating: boolean;
+  /** The applicant agreed to send documents to Gemini (live mode only). */
+  consent: boolean;
+  setConsent: (consent: boolean) => void;
+  /** Live reading is configured (and, in production, protected by App Check). */
+  liveAvailable: boolean;
   report: AuditReport | null;
   runId: number;
   /** Documents behind the current report (sample or read). */
@@ -67,6 +74,8 @@ export function useFlow(): Flow {
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [validating, setValidating] = useState(0);
+  const [consent, setConsent] = useState(false);
+  const liveAvailable = useMemo(() => isLiveReadingAvailable(), []);
   const activeRun = useRef(0); // a newer run, or leaving the audit screen, cancels an older one
   const reader = useDocumentReader(files);
   const { cancel, reset, invalidate, readAll } = reader;
@@ -74,6 +83,16 @@ export function useFlow(): Flow {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  // Leaving the page drops every file and result held in memory (nothing is stored anywhere else).
+  useEffect(() => {
+    const clear = () => {
+      reset();
+      setFiles({});
+    };
+    window.addEventListener('pagehide', clear);
+    return () => window.removeEventListener('pagehide', clear);
+  }, [reset]);
 
   const go = useCallback(
     (next: Screen) => {
@@ -92,6 +111,7 @@ export function useFlow(): Flow {
     setSample(s);
     setForm(s.form);
     setFiles({});
+    setConsent(false);
     setScreen('scheme');
   }, []);
 
@@ -99,24 +119,41 @@ export function useFlow(): Flow {
     setSample(null);
     setForm(EMPTY_FORM);
     setFiles({});
+    setConsent(false);
     reset();
     go('scheme');
   }, [go, reset]);
 
   const onFile = useCallback(
     async (slotId: SlotId, file: File | undefined) => {
+      if (!file) {
+        invalidate(slotId);
+        setFiles((f) => {
+          const { [slotId]: _removed, ...rest } = f;
+          void _removed;
+          return rest;
+        });
+        setError(null);
+        return;
+      }
       setValidating((n) => n + 1);
-      const problem = file ? await validateUpload(file).finally(() => setValidating((n) => n - 1)) : null;
-      if (!file) setValidating((n) => n - 1);
-      setError(problem);
-      if (problem) return;
-      invalidate(slotId);
-      setFiles((f) => ({ ...f, [slotId]: file }));
+      try {
+        const others = Object.entries(files).filter(([id]) => id !== slotId).map(([, f]) => f.size);
+        const batch = batchProblem([...others, file.size]);
+        const prepared = batch ? { error: batch } : await prepareUpload(file);
+        setError(prepared.error ?? null);
+        if (!prepared.file) return;
+        invalidate(slotId);
+        setFiles((f) => ({ ...f, [slotId]: prepared.file }));
+      } finally {
+        setValidating((n) => n - 1);
+      }
     },
-    [invalidate],
+    [files, invalidate],
   );
 
   const run = useCallback(async () => {
+    if (!sample && !consent) return;
     const checked = validateForm(form);
     if (!checked.ok) {
       setFormErrors(checked.errors);
@@ -149,7 +186,7 @@ export function useFlow(): Flow {
       setError(messageOf(e));
       setScreen('upload');
     }
-  }, [form, readAll, sample]);
+  }, [consent, form, readAll, sample]);
 
   const recheck = useCallback(() => {
     if (!sample) return go('upload');
@@ -162,11 +199,12 @@ export function useFlow(): Flow {
     setSample(null);
     setForm(EMPTY_FORM);
     setFiles({});
+    setConsent(false);
     reset();
     setReport(null);
     go('landing');
   }, [go, reset]);
 
   const docs = sample ? sample.errorDocuments : reader.docs;
-  return { screen, lang, sample, form, files, error, formErrors, validating: validating > 0, report, runId, docs, reader, setLang, setForm, go, trySample, start, onFile, run, recheck, restart };
+  return { screen, lang, sample, form, files, error, formErrors, validating: validating > 0, consent, setConsent, liveAvailable, report, runId, docs, reader, setLang, setForm, go, trySample, start, onFile, run, recheck, restart };
 }

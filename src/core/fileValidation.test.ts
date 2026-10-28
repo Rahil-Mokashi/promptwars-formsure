@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { jpegFile, mislabelledFile, pdfFile, pngFile, webpFile } from '../test/files';
-import { detectFileKind, validateFile, validateUpload } from './fileValidation';
+import { batchProblem, detectFileKind, downscaleFactor, imageSizeProblem, inspectPdf, pdfProblem, validateFile, validateUpload } from './fileValidation';
 
 describe('validateFile (type, size, emptiness)', () => {
   it('accepts png, jpg, webp and pdf up to exactly 5 MB', () => {
@@ -67,5 +67,44 @@ describe('validateUpload (type, size and real content)', () => {
     });
     await expect(validateUpload(pdfFile('a.pdf'))).resolves.toBe('a.pdf: the file could not be read.');
     spy.mockRestore();
+  });
+});
+
+describe('inspectPdf and pdfProblem', () => {
+  const bytes = (s: string) => new Uint8Array([...s].map((c) => c.charCodeAt(0)));
+  it('counts pages from page objects and from the page tree', () => {
+    expect(inspectPdf(bytes('%PDF-1.4 /Type /Page /Type /Page /Type/Pages /Count 2 %%EOF')).pages).toBe(2);
+    expect(inspectPdf(bytes('%PDF-1.4 /Count 7 /Type /Pages %%EOF')).pages).toBe(7);
+    expect(inspectPdf(bytes('%PDF-1.4 %%EOF')).pages).toBe(0);
+  });
+  it('detects truncation and encryption', () => {
+    expect(inspectPdf(bytes('%PDF-1.4 ... no marker')).truncated).toBe(true);
+    expect(inspectPdf(bytes('%PDF-1.4 ... %%EOF')).truncated).toBe(false);
+    expect(inspectPdf(bytes('%PDF-1.4 /Encrypt 5 0 R %%EOF')).encrypted).toBe(true);
+  });
+  it('gives a message for each problem and null for a good file', () => {
+    expect(pdfProblem('a.pdf', { truncated: true, encrypted: false, pages: 1 })).toMatch(/cut off/);
+    expect(pdfProblem('a.pdf', { truncated: false, encrypted: true, pages: 1 })).toMatch(/password/);
+    expect(pdfProblem('a.pdf', { truncated: false, encrypted: false, pages: 11 })).toMatch(/more than 10 pages/);
+    expect(pdfProblem('a.pdf', { truncated: false, encrypted: false, pages: 10 })).toBeNull();
+  });
+});
+
+describe('image and batch limits', () => {
+  it('limits images to 6000 × 6000 and scales down only above 2400', () => {
+    expect(imageSizeProblem('a.png', 6000, 6000)).toBeNull();
+    expect(imageSizeProblem('a.png', 6001, 10)).toMatch(/larger than 6000/);
+    expect(imageSizeProblem('a.png', 10, 6001)).toMatch(/larger than 6000/);
+    expect(imageSizeProblem('a.png', 0, 10)).toMatch(/could not be read/);
+    expect(downscaleFactor(2400, 100)).toBe(1);
+    expect(downscaleFactor(4800, 100)).toBe(0.5);
+    expect(downscaleFactor(100, 4800)).toBe(0.5);
+  });
+  it('limits a selection to 10 files and 25 MB in total', () => {
+    const mb = 1024 * 1024;
+    expect(batchProblem(Array(10).fill(1))).toBeNull();
+    expect(batchProblem(Array(11).fill(1))).toBe('You can upload at most 10 files.');
+    expect(batchProblem([5 * mb, 5 * mb, 5 * mb, 5 * mb, 5 * mb])).toBeNull();
+    expect(batchProblem([5 * mb, 5 * mb, 5 * mb, 5 * mb, 5 * mb, 1])).toBe('The files together are larger than 25 MB.');
   });
 });
