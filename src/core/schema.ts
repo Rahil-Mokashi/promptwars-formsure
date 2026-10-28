@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { SchemePack } from '../../../shared/types';
-import raw from '../schemes/mahadbt-postmatric-obc.json';
+import type { SchemePack } from './types';
+import raw from './schemes/mahadbt-postmatric-obc.json';
 
 const trio = z.object({ en: z.string(), mr: z.string(), hi: z.string() });
 const slotId = z.enum([

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import type { AuditReport, ExtractedDocument } from '../../../shared/types';
+import type { AuditReport, ExtractedDocument } from '../core/types';
 import { ArrowIcon, DashIcon, Spinner, Tick, XIcon } from '../icons';
 import { EASE, fadeUp, useReduce } from '../motion';
 

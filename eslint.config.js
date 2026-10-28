@@ -5,19 +5,15 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'functions/lib', 'functions/web', 'design'] },
+  { ignores: ['dist', 'node_modules', 'coverage', 'design'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['functions/**/*.ts', 'shared/**/*.ts', 'vitest.config.ts', 'vite.config.ts'],
+    files: ['vitest.config.ts', 'vite.config.ts', 'eslint.config.js'],
     languageOptions: { globals: globals.node },
   },
   {
-    files: ['scripts/**/*.mjs', 'eslint.config.js'],
-    languageOptions: { globals: globals.node },
-  },
-  {
-    files: ['web/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: { globals: globals.browser },
     plugins: { 'react-hooks': reactHooks },
     extends: [jsxA11y.flatConfigs.recommended],

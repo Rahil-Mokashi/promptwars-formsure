@@ -13,5 +13,5 @@
     "noEmit": true,
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src", "../shared", "../functions/src/rules", "../functions/src/schemes"]
+  "include": ["src"]
 }

@@ -7,7 +7,7 @@ import type {
   Evidence,
   ExtractedDocument,
   SlotId,
-} from '../../../shared/types';
+} from './types';
 import type { Pack, Rule } from './schema';
 
 // ---- date helpers (all dates are YYYY-MM-DD strings, compared lexically) ----

@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
-import type { AuditReport, Check, Lang } from '../../../shared/types';
+import type { AuditReport, Check, Lang } from '../core/types';
 import { ChevronIcon, ExternalIcon, RefreshIcon, SparkIcon, Tick, WarnIcon, WrenchIcon } from '../icons';
 import { fadeUp, useReduce } from '../motion';
 import { LANGS } from './Header';
@@ -9,7 +9,6 @@ import { Ring } from './Ring';
 interface Props {
   report: AuditReport;
   lang: Lang;
-  busy: boolean;
   canRecheck: boolean;
   onReupload: () => void;
   onRecheck: () => void;
@@ -40,7 +39,7 @@ function IssueBody({ check, lang }: { check: Check; lang: Lang }) {
   );
 }
 
-export function Report({ report, lang, busy, canRecheck, onReupload, onRecheck }: Props) {
+export function Report({ report, lang, canRecheck, onReupload, onRecheck }: Props) {
   const reduce = useReduce();
   const failed = report.checks.filter((c) => c.status === 'fail');
   const passed = report.checks.filter((c) => c.status === 'pass');
@@ -114,7 +113,7 @@ export function Report({ report, lang, busy, canRecheck, onReupload, onRecheck }
           })}
           <div className="actions" style={{ marginTop: 8 }}>
             <button className="btn btn-ghost" onClick={onReupload}>Re-upload documents</button>
-            <button className="btn btn-primary" onClick={onRecheck} disabled={busy}>
+            <button className="btn btn-primary" onClick={onRecheck}>
               {canRecheck ? 'I’ve fixed these, re-check' : 'I’ve fixed these, re-upload'}<RefreshIcon />
             </button>
           </div>

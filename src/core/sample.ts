@@ -1,4 +1,4 @@
-import type { ApplicationForm, DocumentsBySlot, ExtractedDocument, SampleResponse } from '../../../shared/types';
+import type { ApplicationForm, DocumentsBySlot, ExtractedDocument, SampleResponse } from './types';
 import { fyStartYear, istDate } from './engine';
 
 // Fictional applicant. Dates follow the current Indian financial year so the

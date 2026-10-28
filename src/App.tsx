@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState, type ReactNode } from 'react';
-import type { ApplicationForm, AuditReport, DocumentsBySlot, Lang, SampleResponse, SchemePack, SlotId } from '../../shared/types';
-import { ApiError, getPack, getSample, postAudit, postExtract } from './api';
+import type { ApplicationForm, AuditReport, DocumentsBySlot, Lang, SampleResponse, SlotId } from './core/types';
+import { audit, extract, getSample, pack } from './api';
+import { UNAVAILABLE_MESSAGE, UnavailableError, validateFile } from './core/extract';
 import { EASE, useReduce } from './motion';
 import { Audit } from './screens/Audit';
 import { Header, type Screen } from './screens/Header';
@@ -12,27 +13,21 @@ import { Scheme } from './screens/Scheme';
 import { Upload } from './screens/Upload';
 
 const EMPTY_FORM: ApplicationForm = { fullName: '', dateOfBirth: '', category: 'OBC', academicYear: '2026-27', applicationType: 'Fresh' };
-const UNAVAILABLE = 'Live reading unavailable, try the sample applicant';
 const message = (e: unknown): string =>
-  e instanceof ApiError ? (e.status === 503 ? UNAVAILABLE : e.message) : 'Something went wrong. Please try again.';
+  e instanceof UnavailableError ? UNAVAILABLE_MESSAGE : e instanceof Error ? e.message : 'Something went wrong. Please try again.';
 
 export function App() {
   const reduce = useReduce();
   const [screen, setScreen] = useState<Screen>('landing');
   const [lang, setLang] = useState<Lang>('en');
-  const [pack, setPack] = useState<SchemePack | null>(null);
   const [sample, setSample] = useState<SampleResponse | null>(null);
   const [form, setForm] = useState<ApplicationForm>(EMPTY_FORM);
   const [files, setFiles] = useState<Partial<Record<SlotId, File>>>({});
   const [docs, setDocs] = useState<DocumentsBySlot>({});
   const [report, setReport] = useState<AuditReport | null>(null);
   const [runId, setRunId] = useState(0);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    getPack().then(setPack, () => undefined);
-  }, []);
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
@@ -42,20 +37,12 @@ export function App() {
     setScreen(s);
   };
 
-  const trySample = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const s = await getSample();
-      setSample(s);
-      setForm(s.form);
-      setFiles({});
-      setScreen('scheme');
-    } catch (e) {
-      setError(message(e));
-    } finally {
-      setBusy(false);
-    }
+  const trySample = () => {
+    const s = getSample();
+    setSample(s);
+    setForm(s.form);
+    setFiles({});
+    setScreen('scheme');
   };
 
   const start = () => {
@@ -63,6 +50,13 @@ export function App() {
     setForm(EMPTY_FORM);
     setFiles({});
     go('scheme');
+  };
+
+  const onFile = (slot: SlotId, file: File | undefined) => {
+    const problem = file ? validateFile(file) : null;
+    setError(problem);
+    if (problem) return;
+    setFiles((f) => ({ ...f, [slot]: file }));
   };
 
   const run = async () => {
@@ -75,30 +69,23 @@ export function App() {
       if (sample) documents = sample.errorDocuments;
       else {
         const entries = await Promise.all(
-          (Object.entries(files) as [SlotId, File][]).map(async ([slot, file]) => [slot, await postExtract(slot, file)] as const),
+          (Object.entries(files) as [SlotId, File][]).map(async ([slot, file]) => [slot, await extract(file)] as const),
         );
         documents = Object.fromEntries(entries);
       }
       setDocs(documents);
-      setReport(await postAudit(form, documents));
+      setReport(audit(form, documents));
     } catch (e) {
       setError(message(e));
       setScreen('upload');
     }
   };
 
-  const recheck = async () => {
+  const recheck = () => {
     if (!sample) return go('upload');
-    setBusy(true);
-    try {
-      const fixed = await postAudit(form, sample.fixedDocuments);
-      setReport(fixed);
-      setScreen(fixed.failed === 0 ? 'ready' : 'report');
-    } catch (e) {
-      setError(message(e));
-    } finally {
-      setBusy(false);
-    }
+    const fixed = audit(form, sample.fixedDocuments);
+    setReport(fixed);
+    setScreen(fixed.failed === 0 ? 'ready' : 'report');
   };
 
   const restart = () => {
@@ -117,7 +104,7 @@ export function App() {
   let body: ReactNode;
   switch (screen) {
     case 'landing':
-      body = <Landing busy={busy} error={error} onSample={trySample} onStart={start} />;
+      body = <Landing error={error} onSample={trySample} onStart={start} />;
       break;
     case 'scheme':
       body = <Scheme pack={pack} lang={lang} form={form} onForm={setForm} onBack={() => go('landing')} onNext={() => go('upload')} />;
@@ -131,7 +118,7 @@ export function App() {
           form={form}
           onForm={setForm}
           files={files}
-          onFile={(slot, file) => setFiles((f) => ({ ...f, [slot]: file }))}
+          onFile={onFile}
           error={error}
           onBack={() => go('scheme')}
           onRun={run}
@@ -152,7 +139,7 @@ export function App() {
       break;
     case 'report':
       body = report && (
-        <Report report={report} lang={lang} busy={busy} canRecheck={!!sample} onReupload={() => go('upload')} onRecheck={recheck} />
+        <Report report={report} lang={lang} canRecheck={!!sample} onReupload={() => go('upload')} onRecheck={recheck} />
       );
       break;
     case 'ready':

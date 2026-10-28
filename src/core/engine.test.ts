@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DocumentsBySlot, ExtractedDocument } from '../../../shared/types';
+import type { DocumentsBySlot, ExtractedDocument } from './types';
 import { fyStartYear, phonetic, runAudit } from './engine';
 import { mahadbtPack, type Pack } from './schema';
 import { buildSample } from './sample';

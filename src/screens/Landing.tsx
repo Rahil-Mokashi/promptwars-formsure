@@ -3,13 +3,12 @@ import { ArrowIcon, CapIcon, LockIcon } from '../icons';
 import { fadeUp, useReduce } from '../motion';
 
 interface Props {
-  busy: boolean;
   error: string | null;
   onSample: () => void;
   onStart: () => void;
 }
 
-export function Landing({ busy, error, onSample, onStart }: Props) {
+export function Landing({ error, onSample, onStart }: Props) {
   const reduce = useReduce();
   const float = (duration: number, delay = 0) =>
     reduce ? {} : { animate: { y: [0, -10, 0] }, transition: { duration, repeat: Infinity, ease: 'easeInOut' as const, delay } };
@@ -25,7 +24,7 @@ export function Landing({ busy, error, onSample, onStart }: Props) {
         <h1 className="h1">Check before<br />you submit.</h1>
         <p className="lead">FormSure reads your documents, checks them against your scheme’s rules, and shows exactly what to fix, before your application gets sent back.</p>
         <div className="row">
-          <button className="btn btn-primary" onClick={onSample} disabled={busy}>
+          <button className="btn btn-primary" onClick={onSample}>
             Try sample applicant<ArrowIcon />
           </button>
           <button className="btn btn-ghost" onClick={onStart}>Start my check</button>

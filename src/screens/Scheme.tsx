@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { ApplicationForm, Lang, SchemePack } from '../../../shared/types';
+import type { ApplicationForm, Lang, SchemePack } from '../core/types';
 import { ArrowIcon, FileIcon } from '../icons';
 import { fadeUp, useReduce } from '../motion';
 import { slotNames } from '../names';

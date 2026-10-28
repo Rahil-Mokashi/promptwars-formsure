@@ -1,4 +1,4 @@
-import type { Lang } from '../../../shared/types';
+import type { Lang } from '../core/types';
 import { ShieldIcon } from '../icons';
 
 export type Screen = 'landing' | 'scheme' | 'upload' | 'audit' | 'report' | 'ready';

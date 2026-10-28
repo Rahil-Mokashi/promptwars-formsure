@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { ApplicationForm, AuditReport } from '../../../shared/types';
+import type { ApplicationForm, AuditReport } from '../core/types';
 import { CalendarIcon, DownloadIcon } from '../icons';
 import { EASE, fadeUp, useReduce } from '../motion';
 import { Ring } from './Ring';
