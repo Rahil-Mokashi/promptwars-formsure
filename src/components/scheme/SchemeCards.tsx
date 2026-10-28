@@ -1,46 +1,69 @@
 import { motion } from 'framer-motion';
+import type { SchemePack } from '../../core/types';
 import { useReduce } from '../../hooks/useMotion';
 import { fadeUp } from '../motionProps';
 
 const STAGGER_S = 0.07;
 
-interface SchemeDef {
+interface CardDef {
+  key: string;
   name: string;
   portal: string;
   pill: string;
-  /** The scheme pack exists and is selected. */
-  on: boolean;
+  /** Id of the scheme pack this card selects, or null for a card that is not a pack. */
+  packId: string | null;
   /** Clicking opens the "how packs work" dialog. */
   opens: boolean;
 }
 
-const SCHEMES: readonly SchemeDef[] = [
-  { name: 'Post-Matric Scholarship for OBC students', portal: 'MahaDBT · VJNT, OBC & SBC Welfare', pill: 'Scheme pack ready', on: true, opens: false },
-  { name: 'Post-Matric Scholarship for VJNT students', portal: 'MahaDBT', pill: 'Coming soon', on: false, opens: false },
-  { name: 'Tuition and exam fees (Freeship)', portal: 'MahaDBT', pill: 'Coming soon', on: false, opens: false },
-  { name: 'Add a new scheme', portal: 'Pack builder: AI drafts rules from official guidelines, you verify', pill: 'Pack builder', on: false, opens: true },
+/** The scheme cards after the live packs: the same "coming soon" and pack-builder cards as the design. */
+const OTHER_CARDS: readonly CardDef[] = [
+  { key: 'vjnt', name: 'Post-Matric Scholarship for VJNT students', portal: 'MahaDBT', pill: 'Coming soon', packId: null, opens: false },
+  { key: 'freeship', name: 'Tuition and exam fees (Freeship)', portal: 'MahaDBT', pill: 'Coming soon', packId: null, opens: false },
+  { key: 'add', name: 'Add a new scheme', portal: 'Pack builder: AI drafts rules from official guidelines, you verify', pill: 'Pack builder', packId: null, opens: true },
 ];
 
-/** The four scheme cards. Only the OBC pack is live; the last card opens the pack dialog. */
-export function SchemeCards({ onOpenPack }: { onOpenPack: () => void }) {
+/** Props of {@link SchemeCards}. */
+export interface SchemeCardsProps {
+  packs: readonly SchemePack[];
+  selectedId: string;
+  /** Sample mode: the sample applicant is an OBC student, so other schemes cannot be chosen. */
+  sampleMode: boolean;
+  onSelect: (packId: string) => void;
+  onOpenPack: () => void;
+}
+
+/** The scheme cards: every shipped pack is selectable; the rest are "coming soon" or open the pack dialog. */
+export function SchemeCards({ packs, selectedId, sampleMode, onSelect, onOpenPack }: SchemeCardsProps) {
   const reduce = useReduce();
+  const cards: CardDef[] = [
+    ...packs.map((p) => ({ key: p.id, name: p.name, portal: p.portal, pill: 'Scheme pack ready', packId: p.id, opens: false })),
+    ...OTHER_CARDS,
+  ];
+
   return (
     <div className="schemes">
-      {SCHEMES.map((s, i) => (
-        <motion.button
-          key={s.name}
-          className={`scheme ${s.on ? 'sel' : s.opens ? '' : 'off'}`}
-          aria-pressed={s.on}
-          aria-disabled={!s.on && !s.opens}
-          aria-haspopup={s.opens ? 'dialog' : undefined}
-          onClick={s.opens ? onOpenPack : undefined}
-          {...fadeUp(reduce, i * STAGGER_S)}
-        >
-          <span className="sname">{s.name}</span>
-          <span className="sportal">{s.portal}</span>
-          <span className={`pill ${s.on ? 'pill-on' : 'pill-off'}`}>{s.pill}</span>
-        </motion.button>
-      ))}
+      {cards.map((card, i) => {
+        const selected = card.packId === selectedId;
+        const locked = card.packId !== null && !selected && sampleMode;
+        const live = card.packId !== null && !locked;
+        return (
+          <motion.button
+            key={card.key}
+            className={`scheme ${selected ? 'sel' : live || card.opens ? '' : 'off'}`}
+            aria-pressed={card.packId !== null ? selected : false}
+            aria-disabled={!live && !card.opens}
+            aria-haspopup={card.opens ? 'dialog' : undefined}
+            title={locked ? 'The sample applicant is an OBC student. Choose "Start my check" to pick another scheme.' : undefined}
+            onClick={card.opens ? onOpenPack : live && card.packId ? () => onSelect(card.packId as string) : undefined}
+            {...fadeUp(reduce, i * STAGGER_S)}
+          >
+            <span className="sname">{card.name}</span>
+            <span className="sportal">{card.portal}</span>
+            <span className={`pill ${card.packId !== null ? 'pill-on' : 'pill-off'}`}>{locked ? 'Sample is OBC' : card.pill}</span>
+          </motion.button>
+        );
+      })}
     </div>
   );
 }

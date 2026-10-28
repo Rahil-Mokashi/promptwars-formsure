@@ -10,6 +10,9 @@ export type FormErrors = Partial<Record<keyof ApplicationForm, string>>;
 /** Form before the applicant has typed anything. */
 export const EMPTY_FORM: ApplicationForm = { fullName: '', dateOfBirth: '', category: 'OBC', academicYear: '2026-27', applicationType: 'Fresh' };
 
+/** The scheme pack used until another is chosen. */
+export const DEFAULT_PACK = 'mahadbt-postmatric-obc';
+
 /** Shown when the form has invalid fields at the moment of running a check. */
 export const FORM_ERROR_NOTE = 'Check the highlighted fields, then run the check again.';
 
@@ -17,6 +20,8 @@ export const FORM_ERROR_NOTE = 'Check the highlighted fields, then run the check
 export interface FlowState {
   screen: Screen;
   lang: Lang;
+  /** Id of the chosen scheme pack. */
+  packId: string;
   /** The sample applicant, or null in live mode. */
   sample: SampleResponse | null;
   form: ApplicationForm;
@@ -33,7 +38,7 @@ export interface FlowState {
 
 /** The state at the start, and after "Check another application". */
 export const initialFlowState: FlowState = {
-  screen: 'landing', lang: 'en', sample: null, form: EMPTY_FORM, files: {}, consent: false,
+  screen: 'landing', lang: 'en', packId: DEFAULT_PACK, sample: null, form: EMPTY_FORM, files: {}, consent: false,
   error: null, formErrors: {}, report: null, runId: 0,
 };
 
@@ -52,6 +57,8 @@ export type FlowAction =
   | { type: 'SELECT_SAMPLE'; sample: SampleResponse }
   /** "Start my check": an empty live application. */
   | { type: 'SELECT_LIVE' }
+  /** Choose a scheme pack (live mode only: the sample applicant is an OBC student). */
+  | { type: 'SELECT_PACK'; packId: string; categories: readonly string[] }
   /** A file was accepted for a slot (or removed when `file` is undefined). */
   | { type: 'SET_FILE'; slotId: SlotId; file: File | undefined }
   /** A chosen file was refused; `message` says why. */
@@ -90,9 +97,14 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowState {
     case 'NAVIGATE':
       return { ...state, screen: action.screen, error: null };
     case 'SELECT_SAMPLE':
-      return { ...state, sample: action.sample, form: action.sample.form, files: {}, consent: false, error: null, formErrors: {}, screen: 'scheme' };
+      return { ...state, packId: DEFAULT_PACK, sample: action.sample, form: action.sample.form, files: {}, consent: false, error: null, formErrors: {}, screen: 'scheme' };
     case 'SELECT_LIVE':
-      return { ...state, sample: null, form: EMPTY_FORM, files: {}, consent: false, error: null, formErrors: {}, report: null, screen: 'scheme' };
+      return { ...state, packId: DEFAULT_PACK, sample: null, form: EMPTY_FORM, files: {}, consent: false, error: null, formErrors: {}, report: null, screen: 'scheme' };
+    case 'SELECT_PACK': {
+      if (state.sample) return state; // the sample applicant belongs to the OBC scheme
+      const category = action.categories.includes(state.form.category) ? state.form.category : (action.categories[0] ?? state.form.category);
+      return { ...state, packId: action.packId, form: { ...state.form, category }, files: {}, report: null, error: null, formErrors: {} };
+    }
     case 'SET_FILE': {
       const { [action.slotId]: _replaced, ...others } = state.files;
       void _replaced;

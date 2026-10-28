@@ -1,6 +1,7 @@
 import './zodConfig';
 import { z } from 'zod';
-import raw from './schemes/mahadbt-postmatric-obc.2025-26.json';
+import obcRaw from './schemes/mahadbt-postmatric-obc.2025-26.json';
+import scRaw from './schemes/mahadbt-postmatric-sc.2025-26.json';
 import type { SchemePack } from './types';
 
 const trio = z.object({ en: z.string(), mr: z.string(), hi: z.string() });
@@ -84,6 +85,7 @@ export const packSchema = z
     portal: z.string(),
     version,
     academicYear: z.string().regex(/^\d{4}-\d{2}$/),
+    categories: z.array(z.string().min(1)).min(1),
     slots: z.array(z.object({ id: slotId, short: z.string(), label: trio, accepts: z.array(docType).min(1) })).min(1),
     rules: z.array(ruleSchema).min(1),
   })
@@ -104,10 +106,19 @@ export const packSchema = z
 
 export type Pack = z.infer<typeof packSchema>;
 
-/** The shipped pack, parsed once at start-up: a malformed pack fails fast instead of at audit time. */
-export const mahadbtPack: Pack = packSchema.parse(raw);
+/** The OBC pack, parsed once at start-up: a malformed pack fails fast instead of at audit time. */
+export const mahadbtPack: Pack = packSchema.parse(obcRaw);
 
-const packs: Record<string, Pack> = { [mahadbtPack.id]: mahadbtPack };
+/** The SC pack. */
+export const mahadbtScPack: Pack = packSchema.parse(scRaw);
+
+/** Every scheme pack the app ships, in the order the scheme screen lists them. */
+export const ALL_PACKS: readonly Pack[] = [mahadbtPack, mahadbtScPack];
+
+/** The pack used when none has been chosen. */
+export const DEFAULT_PACK_ID = mahadbtPack.id;
+
+const packs: Record<string, Pack> = Object.fromEntries(ALL_PACKS.map((p) => [p.id, p]));
 
 /** Looks a pack up by id. */
 export const getPack = (id: string): Pack | undefined => packs[id];

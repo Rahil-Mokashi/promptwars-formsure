@@ -43,6 +43,29 @@ describe('scheme pack dialog', () => {
   });
 });
 
+describe('multi-scheme selection', () => {
+  it('allows picking the SC scheme in live mode and updates categories', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /start my check/i }));
+    const scCard = await screen.findByRole('button', { name: /Post-Matric Scholarship for SC students/i });
+    expect(scCard).toHaveAttribute('aria-pressed', 'false');
+    await user.click(scCard);
+    expect(scCard).toHaveAttribute('aria-pressed', 'true');
+    const catSelect = screen.getByLabelText('Category');
+    expect(within(catSelect).getAllByRole('option').map((o) => o.textContent)).toEqual(['SC']);
+  });
+
+  it('locks other scheme cards in sample mode', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: /try sample applicant/i }));
+    const scCard = await screen.findByRole('button', { name: /Post-Matric Scholarship for SC students/i });
+    expect(scCard).toHaveAttribute('aria-disabled', 'true');
+    expect(scCard).toHaveTextContent('Sample is OBC');
+  });
+});
+
 describe('report preview and ready checklist', () => {
   it('shows a mini document with the problem field when an issue is opened', async () => {
     const user = userEvent.setup();

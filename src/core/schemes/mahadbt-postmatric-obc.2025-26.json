@@ -497,5 +497,10 @@
     }
   ],
   "version": "2.0.0",
-  "academicYear": "2025-26"
+  "academicYear": "2025-26",
+  "categories": [
+    "OBC",
+    "SBC",
+    "VJNT"
+  ]
 }

@@ -85,6 +85,8 @@ export interface SchemePack {
   version: string;
   /** Academic year the pack's evidence applies to. */
   academicYear: string;
+  /** Categories the applicant can choose for this scheme. */
+  categories: string[];
   slots: SlotDef[];
   rules: Record<string, unknown>[];
 }

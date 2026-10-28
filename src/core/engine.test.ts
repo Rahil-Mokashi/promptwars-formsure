@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ALL_SLOTS, NOW, allRulesPack, audit, checkOf, fixed, patchDoc, sample, shippedAudit, statusOf, verifying, withoutDoc } from '../test/docs';
 import { assertNever } from './assertNever';
 import { fyLabel, fyStartYear, longDate } from './dates';
-import { mahadbtPack } from './schema';
+import { mahadbtPack, mahadbtScPack } from './schema';
 
 describe('sample fixtures with every verifiable rule applied (tests the evaluators)', () => {
   it('error set: exactly 3 failures and readiness 57', () => {
@@ -189,5 +189,15 @@ describe('exhaustiveness', () => {
   it('the shipped pack has all seven slots covered by the name rule', () => {
     const nameRule = mahadbtPack.rules.find((r) => r.type === 'cross_document_match');
     expect(nameRule && 'slots' in nameRule ? [...nameRule.slots].sort() : []).toEqual([...ALL_SLOTS].sort());
+  });
+});
+
+describe('the SC pack evaluates its verified rules including income limit', () => {
+  it('applies the verified income-limit rule (max 250,000)', () => {
+    const r250 = audit(patchDoc(fixed, 'income_certificate', { annualIncome: 250_000 }), { ...sample.form, category: 'SC' }, NOW, mahadbtScPack);
+    expect(checkOf(r250, 'income-limit').status).toBe('pass');
+
+    const r251 = audit(patchDoc(fixed, 'income_certificate', { annualIncome: 250_001 }), { ...sample.form, category: 'SC' }, NOW, mahadbtScPack);
+    expect(checkOf(r251, 'income-limit').status).toBe('fail');
   });
 });

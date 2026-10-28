@@ -25,6 +25,16 @@ describe('flowReducer: navigation and starting', () => {
     const next = reduce(withSample, { type: 'SELECT_LIVE' });
     expect(next).toMatchObject({ screen: 'scheme', sample: null, form: EMPTY_FORM, files: {}, report: null });
   });
+  it('SELECT_PACK switches scheme pack and updates category to match in live mode', () => {
+    const live = reduce(initialFlowState, { type: 'SELECT_LIVE' });
+    const sc = reduce(live, { type: 'SELECT_PACK', packId: 'mahadbt-postmatric-sc', categories: ['SC'] });
+    expect(sc.packId).toBe('mahadbt-postmatric-sc');
+    expect(sc.form.category).toBe('SC');
+  });
+  it('SELECT_PACK is locked in sample mode', () => {
+    const next = reduce(withSample, { type: 'SELECT_PACK', packId: 'mahadbt-postmatric-sc', categories: ['SC'] });
+    expect(next.packId).toBe(initialFlowState.packId);
+  });
 });
 
 describe('flowReducer: files', () => {

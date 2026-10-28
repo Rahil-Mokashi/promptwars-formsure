@@ -1,14 +1,18 @@
 import { SOURCE_KIND_LABEL } from '../../core/copy';
-import { isEvaluable, mahadbtPack } from '../../core/schema';
+import { DEFAULT_PACK_ID, getPack, isEvaluable } from '../../core/schema';
 import { Modal } from '../Modal';
 
 /** Props of {@link PackDialog}. */
 export interface PackDialogProps {
+  /** The pack whose rules are shown. */
+  packId: string;
   onClose: () => void;
 }
 
 /** Shows the live scheme pack's rules as a table (rule, AI or code, source, verified) so judges can see how packs work. */
-export function PackDialog({ onClose }: PackDialogProps) {
+export function PackDialog({ packId, onClose }: PackDialogProps) {
+  const mahadbtPack = getPack(packId) ?? getPack(DEFAULT_PACK_ID);
+  if (!mahadbtPack) return null;
   return (
     <Modal title="How a scheme pack works" onClose={onClose}>
       <p className="sub" style={{ marginTop: 0, maxWidth: 'none' }}>

@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { maskAadhaar } from './core/mask';
 import type { SlotId } from './core/types';
-import { pack } from './services/api';
 import { useFlow, type Flow } from './hooks/useFlow';
 import { EASE } from './components/motionProps';
 import { useReduce } from './hooks/useMotion';
@@ -31,11 +30,16 @@ function currentScreen(flow: Flow): ReactNode {
     case 'landing':
       return <Landing error={flow.error} onSample={flow.trySample} onStart={flow.start} />;
     case 'scheme':
-      return <Scheme pack={pack} lang={flow.lang} form={flow.form} onForm={flow.setForm} onBack={() => flow.go('landing')} onNext={() => flow.go('upload')} />;
+      return (
+        <Scheme
+          pack={flow.pack} packs={flow.packs} sampleMode={!!flow.sample} onSelectPack={flow.selectPack}
+          lang={flow.lang} form={flow.form} onForm={flow.setForm} onBack={() => flow.go('landing')} onNext={() => flow.go('upload')}
+        />
+      );
     case 'upload':
       return (
         <Upload
-          pack={pack} lang={flow.lang} sample={flow.sample} form={flow.form} onForm={flow.setForm} files={flow.files}
+          pack={flow.pack} lang={flow.lang} sample={flow.sample} form={flow.form} onForm={flow.setForm} files={flow.files}
           onFile={flow.onFile} slotStates={flow.reader.slotStates} retrying={flow.reader.retrying} onRetry={flow.reader.retry}
           error={flow.error} formErrors={flow.formErrors} validating={flow.validating} consent={flow.consent} onConsent={flow.setConsent} liveAvailable={flow.liveAvailable} onBack={() => flow.go('scheme')} onRun={flow.run}
         />
@@ -43,13 +47,13 @@ function currentScreen(flow: Flow): ReactNode {
     case 'audit':
       return (
         <Audit
-          key={flow.runId} pack={pack} report={report} progress={flow.reader.progress} docs={flow.docs}
+          key={flow.runId} pack={flow.pack} report={report} progress={flow.reader.progress} docs={flow.docs}
           fileNames={fileNamesOf(flow)} sample={!!flow.sample} firstName={flow.form.fullName.trim().split(/\s+/)[0] ?? ''}
           onReport={() => flow.go(report && report.failed === 0 && report.needsReview === 0 ? 'ready' : 'report')}
         />
       );
     case 'report':
-      return report && <Report pack={pack} docs={flow.docs} report={report} lang={flow.lang} canRecheck={!!flow.sample} onReupload={() => flow.go('upload')} onRecheck={flow.recheck} />;
+      return report && <Report pack={flow.pack} docs={flow.docs} report={report} lang={flow.lang} canRecheck={!!flow.sample} onReupload={() => flow.go('upload')} onRecheck={flow.recheck} />;
     case 'ready':
       return report && <Ready report={report} form={flow.form} onRestart={flow.restart} />;
   }

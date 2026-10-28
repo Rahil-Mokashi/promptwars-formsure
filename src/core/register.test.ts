@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { RULE_DOCS, renderRegister } from './register';
-import { isEvaluable, mahadbtPack, packSchema } from './schema';
+import { ALL_PACKS, isEvaluable, mahadbtPack, packSchema } from './schema';
 
 const ROOT = resolve(__dirname, '../..');
 const read = (path: string): string => readFileSync(resolve(ROOT, path), 'utf8');
@@ -34,7 +34,8 @@ describe('RULES.md is generated from the pack and in sync with it', () => {
 
 describe('scheme pack file', () => {
   it('is versioned in its file name by pack id and evidence year', () => {
-    expect(readdirSync(resolve(ROOT, 'src/core/schemes'))).toEqual([`${mahadbtPack.id}.${mahadbtPack.academicYear}.json`]);
+    const expected = ALL_PACKS.map((p) => `${p.id}.${p.academicYear}.json`).sort();
+    expect(readdirSync(resolve(ROOT, 'src/core/schemes'))).toEqual(expected);
   });
 
   it('only rules backed by an official source or a college notice are applied, and income limit stays conflicting', () => {

@@ -9,9 +9,9 @@ const NOW = new Date('2026-10-28T06:00:00Z');
 describe('audit on the sample applicant', () => {
   it('gives 50% with one failure for the error documents and 100% for the fixed ones', () => {
     const s = getSample(NOW);
-    const bad = audit(s.form, s.errorDocuments, NOW);
+    const bad = audit(s.form, s.errorDocuments, undefined, NOW);
     expect([bad.readiness, bad.failed, bad.passed, bad.notEvaluated]).toEqual([50, 1, 1, 6]);
-    expect(audit(s.form, s.fixedDocuments, NOW).readiness).toBe(100);
+    expect(audit(s.form, s.fixedDocuments, undefined, NOW).readiness).toBe(100);
   });
 
   it('masks 12-digit numbers in the report', () => {
@@ -19,7 +19,7 @@ describe('audit on the sample applicant', () => {
     const aadhaar = s.errorDocuments.aadhaar;
     if (!aadhaar) throw new Error('sample has no aadhaar');
     s.errorDocuments.aadhaar = { ...aadhaar, applicantName: { original: 'x', english: 'Aarav 1234 5678 9012' } };
-    expect(JSON.stringify(audit(s.form, s.errorDocuments, NOW))).not.toContain('1234 5678');
+    expect(JSON.stringify(audit(s.form, s.errorDocuments, undefined, NOW))).not.toContain('1234 5678');
   });
 
   it('exposes the MahaDBT pack with 7 slots and 8 rules', () => {

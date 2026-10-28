@@ -4,7 +4,7 @@ import { ArrowIcon, FileIcon } from '../components/icons';
 import { fadeUp } from '../components/motionProps';
 import { PackDialog } from '../components/scheme/PackDialog';
 import { SchemeCards } from '../components/scheme/SchemeCards';
-import { APPLICATION_TYPES, CATEGORIES } from '../core/formSchema';
+import { APPLICATION_TYPES } from '../core/formSchema';
 import { slotNames } from '../core/slotNames';
 import type { ApplicationForm, Lang, SchemePack } from '../core/types';
 import { useReduce } from '../hooks/useMotion';
@@ -15,7 +15,13 @@ const KNOWN_YEARS = ['2026-27', '2025-26'] as const;
 
 /** Props of {@link Scheme}. */
 export interface SchemeProps {
+  /** The chosen scheme pack. */
   pack: SchemePack;
+  /** Every pack that can be chosen. */
+  packs: readonly SchemePack[];
+  /** Sample mode: the sample applicant is an OBC student, so the scheme cannot change. */
+  sampleMode: boolean;
+  onSelectPack: (packId: string) => void;
   lang: Lang;
   form: ApplicationForm;
   onForm: (form: ApplicationForm) => void;
@@ -24,7 +30,7 @@ export interface SchemeProps {
 }
 
 /** Second screen: choose the scheme, confirm the application details, see the documents it needs. */
-export function Scheme({ pack, lang, form, onForm, onBack, onNext }: SchemeProps) {
+export function Scheme({ pack, packs, sampleMode, onSelectPack, lang, form, onForm, onBack, onNext }: SchemeProps) {
   const reduce = useReduce();
   const [packOpen, setPackOpen] = useState(false);
   const years = useMemo(() => Array.from(new Set([form.academicYear, ...KNOWN_YEARS].filter(Boolean))), [form.academicYear]);
@@ -34,7 +40,7 @@ export function Scheme({ pack, lang, form, onForm, onBack, onNext }: SchemeProps
     <main className="wrap page" id="main" tabIndex={-1}>
       <h1 className="h2">Which scholarship are you applying for?</h1>
       <p className="sub">FormSure loads that scheme’s rules. MahaDBT is the first scheme pack; new forms are added as new packs.</p>
-      <SchemeCards onOpenPack={() => setPackOpen(true)} />
+      <SchemeCards packs={packs} selectedId={pack.id} sampleMode={sampleMode} onSelect={onSelectPack} onOpenPack={() => setPackOpen(true)} />
       <div className="grid2">
         <section className="card panel" aria-labelledby="app-details">
           <p className="ptitle" id="app-details">Application details</p>
@@ -42,7 +48,7 @@ export function Scheme({ pack, lang, form, onForm, onBack, onNext }: SchemeProps
           <div className="field">
             <label htmlFor="cat">Category</label>
             <select id="cat" value={form.category} onChange={set('category')}>
-              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+              {pack.categories.map((c) => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div className="field">
@@ -60,7 +66,7 @@ export function Scheme({ pack, lang, form, onForm, onBack, onNext }: SchemeProps
         </section>
         <section className="card panel" aria-labelledby="req-docs">
           <p className="ptitle" id="req-docs">Documents this scheme needs</p>
-          <p className="pdesc">{pack.slots.length} documents for Post-Matric Scholarship (OBC)</p>
+          <p className="pdesc">{pack.slots.length} documents for {pack.name}</p>
           <ul className="doclist">
             {pack.slots.map((slot, i) => {
               const n = slotNames(slot, lang);
@@ -77,7 +83,7 @@ export function Scheme({ pack, lang, form, onForm, onBack, onNext }: SchemeProps
           </ul>
         </section>
       </div>
-      {packOpen && <PackDialog onClose={() => setPackOpen(false)} />}
+      {packOpen && <PackDialog packId={pack.id} onClose={() => setPackOpen(false)} />}
       <div className="actions">
         <button className="btn btn-ghost" onClick={onBack}>Back</button>
         <button className="btn btn-primary" onClick={onNext}>Continue to upload<ArrowIcon /></button>

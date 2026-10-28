@@ -39,7 +39,7 @@ describe('validateForm', () => {
     expect(errorsOf({ dateOfBirth: '2030-01-01' }).dateOfBirth).toBe('The date of birth cannot be in the future.');
   });
   it('rejects an unknown category, year or application type', () => {
-    expect(errorsOf({ category: 'General' }).category).toBe('Choose OBC, SBC or VJNT.');
+    expect(errorsOf({ category: 'General' }).category).toBe('Choose OBC, SBC, VJNT.');
     expect(errorsOf({ academicYear: 'next year' }).academicYear).toBe('Choose an academic year.');
     expect(errorsOf({ applicationType: 'Other' }).applicationType).toBe('Choose Fresh or Renewal.');
   });

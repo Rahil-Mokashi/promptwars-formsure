@@ -3,8 +3,8 @@ import { UNAVAILABLE_MESSAGE } from '../core/constants';
 import { UnavailableError } from '../core/errors';
 import { batchProblem } from '../core/fileValidation';
 import { validateForm } from '../core/formSchema';
-import type { ApplicationForm, AuditReport, DocumentsBySlot, Lang, SampleResponse, SlotId } from '../core/types';
-import { audit, getSample } from '../services/api';
+import type { ApplicationForm, AuditReport, DocumentsBySlot, Lang, SampleResponse, SchemePack, SlotId } from '../core/types';
+import { audit, getSample, packs, wirePack } from '../services/api';
 import { isLiveReadingAvailable } from '../services/firebase';
 import type { ReadOutcome } from '../services/readFiles';
 import { prepareUpload } from '../services/uploadPipeline';
@@ -27,6 +27,11 @@ const messageOf = (e: unknown): string =>
 export interface Flow {
   screen: Screen;
   lang: Lang;
+  /** The chosen scheme pack. */
+  pack: SchemePack;
+  /** Every scheme pack that can be chosen. */
+  packs: readonly SchemePack[];
+  selectPack: (packId: string) => void;
   sample: SampleResponse | null;
   form: ApplicationForm;
   files: Partial<Record<SlotId, File>>;
@@ -68,6 +73,7 @@ export function useFlow(): Flow {
   const reader = useDocumentReader(state.files);
   const { cancel, reset, invalidate, readAll } = reader;
   const { sample, form, files, consent } = state;
+  const pack = useMemo(() => wirePack(state.packId), [state.packId]);
 
   useEffect(() => {
     document.documentElement.lang = state.lang;
@@ -128,7 +134,7 @@ export function useFlow(): Flow {
 
   const run = useCallback(async () => {
     if (!sample && !consent) return;
-    const checked = validateForm(form);
+    const checked = validateForm(form, undefined, pack.categories);
     if (!checked.ok) {
       dispatch({ type: 'RUN_AUDIT', run: { stage: 'invalid', formErrors: checked.errors } });
       return;
@@ -139,7 +145,7 @@ export function useFlow(): Flow {
     dispatch({ type: 'RUN_AUDIT', run: { stage: 'started' } });
     try {
       if (sample) {
-        dispatch({ type: 'RUN_AUDIT', run: { stage: 'finished', report: audit(checked.form, sample.errorDocuments) } });
+        dispatch({ type: 'RUN_AUDIT', run: { stage: 'finished', report: audit(checked.form, sample.errorDocuments, pack.id) } });
         return;
       }
       const outcome = await readAll();
@@ -148,16 +154,16 @@ export function useFlow(): Flow {
         dispatch({ type: 'RUN_AUDIT', run: { stage: 'failed', error: failureMessage(outcome) } });
         return;
       }
-      dispatch({ type: 'RUN_AUDIT', run: { stage: 'finished', report: audit(checked.form, outcome.documents) } });
+      dispatch({ type: 'RUN_AUDIT', run: { stage: 'finished', report: audit(checked.form, outcome.documents, pack.id) } });
     } catch (e) {
       if (current()) dispatch({ type: 'RUN_AUDIT', run: { stage: 'failed', error: messageOf(e) } });
     }
-  }, [consent, form, readAll, sample]);
+  }, [consent, form, pack, readAll, sample]);
 
   const recheck = useCallback(() => {
     if (!sample) return go('upload');
-    dispatch({ type: 'RECHECK', report: audit(form, sample.fixedDocuments) });
-  }, [form, go, sample]);
+    dispatch({ type: 'RECHECK', report: audit(form, sample.fixedDocuments, pack.id) });
+  }, [form, go, pack, sample]);
 
   const restart = useCallback(() => {
     reset();
@@ -166,12 +172,21 @@ export function useFlow(): Flow {
     dispatch({ type: 'RESTART' });
   }, [cancel, reset]);
 
+  const selectPack = useCallback(
+    (packId: string) => {
+      const chosen = wirePack(packId);
+      reset();
+      dispatch({ type: 'SELECT_PACK', packId: chosen.id, categories: chosen.categories });
+    },
+    [reset],
+  );
+
   const setLang = useCallback((lang: Lang) => dispatch({ type: 'SET_LANG', lang }), []);
   const setForm = useCallback((next: ApplicationForm) => dispatch({ type: 'SET_FORM', form: next }), []);
   const setConsent = useCallback((value: boolean) => dispatch({ type: 'SET_CONSENT', consent: value }), []);
 
   return {
-    screen: state.screen, lang: state.lang, sample, form, files, error: state.error, formErrors: state.formErrors,
+    screen: state.screen, lang: state.lang, pack, packs, selectPack, sample, form, files, error: state.error, formErrors: state.formErrors,
     validating: validating > 0, consent, setConsent, liveAvailable, report: state.report, runId: state.runId,
     docs: sample ? sample.errorDocuments : reader.docs, reader, setLang, setForm, go, trySample, start, onFile, run, recheck, restart,
   };
