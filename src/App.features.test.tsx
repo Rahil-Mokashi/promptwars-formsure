@@ -32,7 +32,10 @@ describe('scheme pack dialog', () => {
     const dialog = await screen.findByRole('dialog', { name: /how a scheme pack works/i });
     const rows = within(dialog).getAllByRole('row');
     expect(rows).toHaveLength(9); // header + 8 rules
-    expect(within(dialog).getByText('Not verified, skipped')).toBeInTheDocument();
+    expect(within(dialog).getAllByText(/Not evaluated \(/)).toHaveLength(6);
+    expect(within(dialog).getAllByText('Verified, applied')).toHaveLength(2);
+    expect(within(dialog).getAllByText('College notice').length).toBeGreaterThan(0);
+    expect(within(dialog).getAllByText('Secondary source').length).toBeGreaterThan(0);
     expect(within(dialog).getAllByText('AI reads, code decides').length).toBe(3);
     expect(within(dialog).getAllByRole('link').length).toBe(8);
     await user.keyboard('{Escape}');
@@ -45,10 +48,10 @@ describe('report preview and ready checklist', () => {
     const user = userEvent.setup();
     render(<App />);
     await toReady(user);
-    expect(screen.getByRole('group', { name: /preview of income certificate/i })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /name is spelled differently/i }));
-    const marks = screen.getByRole('group', { name: /preview of marksheet/i });
-    expect(within(marks).getAllByText('Arav Sunil Patil')[0]).toHaveClass('hl');
+    const preview = screen.getByRole('group', { name: /preview of income certificate/i });
+    expect(within(preview).getByText('income certificate')).toHaveClass('hl'); // the only document type found: the NCL page is missing
+    await user.click(screen.getByRole('button', { name: /non-creamy layer certificate is missing/i }));
+    expect(screen.queryByRole('group', { name: /preview of income certificate/i })).toBeNull();
   });
 
   it('opens a printable checklist dialog from the Ready screen', async () => {

@@ -16,16 +16,16 @@ async function toReport(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('reduced-motion sample flow', () => {
-  it('renders 3 issues at 57% with no animation delay, then 100% after the re-check', async () => {
+  it('renders the one issue at 50% with no animation delay, then 100% after the re-check', async () => {
     const user = userEvent.setup();
     render(<App />);
     await toReport(user);
 
-    expect(await screen.findByRole('heading', { name: 'Pre-check complete — 4 passed, 3 need fixing, 0 couldn’t be verified.' })).toBeInTheDocument();
-    expect(screen.getAllByRole('article')).toHaveLength(3);
+    expect(await screen.findByRole('heading', { name: 'Pre-check complete — 1 passed, 1 need fixing, 0 couldn’t be verified.' })).toBeInTheDocument();
+    expect(screen.getAllByRole('article')).toHaveLength(1);
     // Count-up is skipped: the final number is there immediately.
-    expect(screen.getByText('57%')).toBeInTheDocument();
-    expect(screen.getByText(/Not evaluated \(1\)/)).toBeInTheDocument();
+    expect(screen.getByText('50%')).toBeInTheDocument();
+    expect(screen.getByText(/Not evaluated \(6\)/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /re-check/i }));
     expect(await screen.findByRole('heading', { name: 'Pre-check complete' })).toBeInTheDocument();
@@ -51,10 +51,10 @@ describe('reduced-motion sample flow', () => {
     await screen.findByRole('heading', { name: /Pre-check complete/ });
     await user.click(screen.getByRole('button', { name: 'मराठी' }));
     expect(document.documentElement.lang).toBe('mr');
-    expect(screen.getByText(/तहसील कार्यालयातून १ एप्रिल/)).toBeInTheDocument();
+    expect(screen.getByText(/नॉन-क्रिमीलेयर प्रमाणपत्र एकाच PDF मध्ये जोडा/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'हिंदी' }));
     expect(document.documentElement.lang).toBe('hi');
-    expect(screen.getByText(/तहसील कार्यालय से 1 अप्रैल/)).toBeInTheDocument();
+    expect(screen.getByText(/नॉन-क्रीमी लेयर प्रमाणपत्र को एक ही PDF में जोड़ें/)).toBeInTheDocument();
   });
 
   it('live upload without Firebase config says so up front, hides the consent box and cannot run', async () => {

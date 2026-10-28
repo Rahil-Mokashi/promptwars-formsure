@@ -156,7 +156,7 @@ describe('"Retry this file"', () => {
     await chooseThreeAndRun(user);
     await screen.findByRole('alert');
     await user.upload(screen.getByLabelText(/OBC caste certificate/), pdfFile('b-caste-v2.pdf'));
-    expect(screen.queryByRole('button', { name: /retry this file/i })).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('button', { name: /retry this file/i })).toBeNull()); // the file check is asynchronous
     hoisted.generate.mockResolvedValueOnce(MARKSHEET_JSON);
     await clickRun(user);
     expect(await screen.findByRole('button', { name: /see readiness report/i })).toBeInTheDocument();

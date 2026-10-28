@@ -20,3 +20,6 @@ export const PRECHECK_DISCLAIMER = 'This is a document pre-check, not an eligibi
 /** `Pre-check complete — 4 passed, 3 need fixing, 0 couldn't be verified.` */
 export const precheckSummary = (passed: number, failed: number, needsReview: number): string =>
   `Pre-check complete — ${passed} passed, ${failed} need fixing, ${needsReview} couldn’t be verified.`;
+
+/** Source kinds as shown to the user. */
+export const SOURCE_KIND_LABEL = { official: 'Official source', 'college-notice': 'College notice', secondary: 'Secondary source' } as const;

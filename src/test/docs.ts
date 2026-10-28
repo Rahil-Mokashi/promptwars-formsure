@@ -26,8 +26,28 @@ export function withoutDoc(docs: DocumentsBySlot, slot: SlotId): DocumentsBySlot
   return copy;
 }
 
-/** Runs the audit of the shipped pack. */
-export function audit(docs: DocumentsBySlot, form: ApplicationForm = sample.form, now: Date = NOW, pack: Pack = mahadbtPack): AuditReport {
+/** The shipped pack with the listed rules forced to verified (with a stand-in college-notice source). */
+export const verifying = (ruleIds: readonly string[]): Pack => ({
+  ...mahadbtPack,
+  rules: mahadbtPack.rules.map((r) =>
+    ruleIds.includes(r.id)
+      ? {
+          ...r,
+          status: 'verified' as const,
+          evidence: [{ label: 'test', url: 'https://example.org/', kind: 'college-notice' as const, quote: 'stand-in evidence for tests' }, ...r.evidence],
+        }
+      : r,
+  ),
+});
+
+/**
+ * Every rule applied except the income limit, which stays conflicting as in the real pack.
+ * Used to test the evaluators themselves; the shipped pack's own gating is tested separately.
+ */
+export const allRulesPack: Pack = verifying(mahadbtPack.rules.filter((r) => r.id !== 'income-limit').map((r) => r.id));
+
+/** Runs the audit with every rule applied (see {@link allRulesPack}). */
+export function audit(docs: DocumentsBySlot, form: ApplicationForm = sample.form, now: Date = NOW, pack: Pack = allRulesPack): AuditReport {
   return runAudit(pack, form, docs, now);
 }
 
@@ -37,6 +57,9 @@ export function checkOf(report: AuditReport, ruleId: string): Check {
   if (!check) throw new Error(`no check ${ruleId}`);
   return check;
 }
+
+/** Runs the audit with the pack exactly as shipped. */
+export const shippedAudit = (docs: DocumentsBySlot, form: ApplicationForm = sample.form, now: Date = NOW): AuditReport => audit(docs, form, now, mahadbtPack);
 
 /** Status of one rule after auditing `docs`. */
 export const statusOf = (docs: DocumentsBySlot, ruleId: string, form: ApplicationForm = sample.form): Check['status'] => checkOf(audit(docs, form), ruleId).status;

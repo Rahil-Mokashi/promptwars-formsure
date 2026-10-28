@@ -13,7 +13,8 @@
     "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "rules:register": "node scripts/update-register.mjs"
   },
   "dependencies": {
     "firebase": "^13.1.0",

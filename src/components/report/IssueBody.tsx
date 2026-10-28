@@ -1,11 +1,8 @@
-import { NEEDS_REVIEW_FIX, NEEDS_REVIEW_WHY } from '../../core/copy';
+import { NEEDS_REVIEW_FIX, NEEDS_REVIEW_WHY, SOURCE_KIND_LABEL } from '../../core/copy';
 import type { Preview } from '../../core/preview';
 import type { Check, Lang } from '../../core/types';
 import { ExternalIcon, SparkIcon, WrenchIcon } from '../icons';
 import { MiniDoc } from './MiniDoc';
-
-/** Source kinds as shown to the user. */
-export const SOURCE_KIND_LABEL = { official: 'Official source', 'college-notice': 'College notice', secondary: 'Secondary source' } as const;
 
 /** Props of {@link IssueBody}. */
 export interface IssueBodyProps {

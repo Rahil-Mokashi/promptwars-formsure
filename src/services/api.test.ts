@@ -7,10 +7,10 @@ import type { Generate } from './extraction';
 const NOW = new Date('2026-10-28T06:00:00Z');
 
 describe('audit on the sample applicant', () => {
-  it('gives 57% with 3 failures for the error documents and 100% for the fixed ones', () => {
+  it('gives 50% with one failure for the error documents and 100% for the fixed ones', () => {
     const s = getSample(NOW);
     const bad = audit(s.form, s.errorDocuments, NOW);
-    expect([bad.readiness, bad.failed, bad.passed, bad.notEvaluated]).toEqual([57, 3, 4, 1]);
+    expect([bad.readiness, bad.failed, bad.passed, bad.notEvaluated]).toEqual([50, 1, 1, 6]);
     expect(audit(s.form, s.fixedDocuments, NOW).readiness).toBe(100);
   });
 

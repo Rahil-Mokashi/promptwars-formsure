@@ -2,7 +2,7 @@ import { fyStartYear, istDate } from './dates';
 import { toDevanagari } from './names';
 import { evaluateRule } from './rules';
 import { notEvaluated, type Outcome, type RuleContext } from './rules/context';
-import type { Pack } from './schema';
+import { isEvaluable, type Pack, type Rule } from './schema';
 import type { ApplicationForm, AuditReport, Check, DocumentsBySlot, Lang, Trio } from './types';
 
 export { fyLabel, fyStartYear, longDate } from './dates';
@@ -14,9 +14,13 @@ const PERCENT = 100;
 const fillYear = (text: string, lang: Lang, year: string): string => text.replace('{year}', lang === 'mr' ? toDevanagari(year) : year);
 const fillFix = (fix: Trio, year: string): Trio => ({ en: fillYear(fix.en, 'en', year), mr: fillYear(fix.mr, 'mr', year), hi: fillYear(fix.hi, 'hi', year) });
 
+/** Why a rule is not applied, in the words the report uses. */
+const skipReason = (rule: Rule): string =>
+  rule.status === 'conflicting' ? 'Sources conflict, rule skipped' : 'Rule not verified yet, skipped';
+
 /**
  * Checks an application against a scheme pack.
- * Unverified rules are not evaluated, never applied. Readiness counts passes against failures and checks that
+ * Only rules that are verified by an official source or a college notice are applied; the rest are not evaluated. Readiness counts passes against failures and checks that
  * need review, so it is 100 only when every evaluated rule passed.
  * @param now used to decide which Indian financial year is current
  * @returns readiness (`passed ÷ (passed + failed + needing review) × 100`, rounded) and every check with evidence, why, fix and source
@@ -27,7 +31,7 @@ export function runAudit(pack: Pack, form: ApplicationForm, documents: Documents
   const ctx: RuleContext = { pack, form, docs: documents, today };
 
   const checks: Check[] = pack.rules.map((rule) => {
-    const outcome: Outcome = rule.verified ? evaluateRule(rule, ctx) : notEvaluated('Rule not verified yet, skipped');
+    const outcome: Outcome = isEvaluable(rule) ? evaluateRule(rule, ctx) : notEvaluated(skipReason(rule));
     return {
       ruleId: rule.id,
       label: rule.label,

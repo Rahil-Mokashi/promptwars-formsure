@@ -1,0 +1,501 @@
+{
+  "id": "mahadbt-postmatric-obc",
+  "name": "Post-Matric Scholarship for OBC students",
+  "portal": "MahaDBT · VJNT, OBC & SBC Welfare",
+  "slots": [
+    {
+      "id": "aadhaar",
+      "short": "Aadhaar",
+      "label": {
+        "en": "Aadhaar card",
+        "mr": "आधार कार्ड",
+        "hi": "आधार कार्ड"
+      },
+      "accepts": [
+        "aadhaar"
+      ]
+    },
+    {
+      "id": "caste_certificate",
+      "short": "Caste certificate",
+      "label": {
+        "en": "OBC caste certificate",
+        "mr": "जात प्रमाणपत्र",
+        "hi": "जाति प्रमाणपत्र"
+      },
+      "accepts": [
+        "caste_certificate"
+      ]
+    },
+    {
+      "id": "income_certificate",
+      "short": "Income certificate",
+      "label": {
+        "en": "Income certificate + non-creamy layer (one PDF)",
+        "mr": "उत्पन्न व नॉन-क्रिमीलेयर प्रमाणपत्र",
+        "hi": "आय व नॉन-क्रीमी लेयर प्रमाणपत्र"
+      },
+      "accepts": [
+        "income_certificate",
+        "non_creamy_layer"
+      ]
+    },
+    {
+      "id": "domicile",
+      "short": "Domicile certificate",
+      "label": {
+        "en": "Domicile certificate",
+        "mr": "अधिवास प्रमाणपत्र",
+        "hi": "अधिवास प्रमाणपत्र"
+      },
+      "accepts": [
+        "domicile_certificate"
+      ]
+    },
+    {
+      "id": "bonafide",
+      "short": "Bonafide",
+      "label": {
+        "en": "College bonafide and fee structure",
+        "mr": "बोनाफाईड व फी रचना",
+        "hi": "बोनाफाइड व फीस संरचना"
+      },
+      "accepts": [
+        "bonafide_certificate"
+      ]
+    },
+    {
+      "id": "marksheet",
+      "short": "Marksheet",
+      "label": {
+        "en": "Previous year marksheet",
+        "mr": "मागील वर्षाची गुणपत्रिका",
+        "hi": "पिछले वर्ष की अंकतालिका"
+      },
+      "accepts": [
+        "marksheet"
+      ]
+    },
+    {
+      "id": "bank_passbook",
+      "short": "Bank passbook",
+      "label": {
+        "en": "Aadhaar-seeded bank passbook",
+        "mr": "आधार संलग्न बँक पासबुक",
+        "hi": "आधार से जुड़ी बैंक पासबुक"
+      },
+      "accepts": [
+        "bank_passbook"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "required-documents",
+      "type": "required_document",
+      "label": "Required documents present",
+      "severity": "critical",
+      "issueTitle": "A required document is missing",
+      "issueDoc": "Document upload",
+      "slots": [
+        "aadhaar",
+        "caste_certificate",
+        "income_certificate",
+        "domicile",
+        "bonafide",
+        "marksheet",
+        "bank_passbook"
+      ],
+      "why": {
+        "en": "MahaDBT needs a set of documents to verify an application, and an application with a missing one may be sent back.",
+        "mr": "अर्ज पडताळण्यासाठी MahaDBT ला काही कागदपत्रे लागतात; एखादे नसल्यास अर्ज परत पाठवला जाऊ शकतो.",
+        "hi": "आवेदन के सत्यापन के लिए MahaDBT को कुछ दस्तावेज़ चाहिए; कोई छूटा हो तो आवेदन वापस भेजा जा सकता है।"
+      },
+      "fix": {
+        "en": "Upload the missing document in its slot before you submit.",
+        "mr": "सबमिट करण्यापूर्वी राहिलेले कागदपत्र त्याच्या जागी अपलोड करा.",
+        "hi": "जमा करने से पहले छूटा हुआ दस्तावेज़ उसकी जगह अपलोड करें।"
+      },
+      "source": {
+        "label": "MahaDBT scheme page: Post Matric Scholarship to OBC Students",
+        "url": "https://mahadbt.maharashtra.gov.in/SchemeData/SchemeData?str=E9DDFA703C38E51AB02E984835E89FEFDB316E301CE6A991F41C5D42B01A7D7E",
+        "kind": "official"
+      },
+      "usesAi": false,
+      "version": "2.0.0",
+      "status": "conflicting",
+      "evidence": [
+        {
+          "label": "MahaDBT scheme page: Post Matric Scholarship to OBC Students",
+          "url": "https://mahadbt.maharashtra.gov.in/SchemeData/SchemeData?str=E9DDFA703C38E51AB02E984835E89FEFDB316E301CE6A991F41C5D42B01A7D7E",
+          "kind": "official",
+          "quote": "Caste certificate - should be issued by competent authority(Issued by Govt. of Maharashtra)"
+        },
+        {
+          "label": "MahaDBT scheme page: Post Matric Scholarship to OBC Students",
+          "url": "https://mahadbt.maharashtra.gov.in/SchemeData/SchemeData?str=E9DDFA703C38E51AB02E984835E89FEFDB316E301CE6A991F41C5D42B01A7D7E",
+          "kind": "official",
+          "quote": "Income certificate / Income Declaration - should be issued by competent authority"
+        },
+        {
+          "label": "MahaDBT scheme page: Post Matric Scholarship to OBC Students",
+          "url": "https://mahadbt.maharashtra.gov.in/SchemeData/SchemeData?str=E9DDFA703C38E51AB02E984835E89FEFDB316E301CE6A991F41C5D42B01A7D7E",
+          "kind": "official",
+          "quote": "HSC or SSC marksheet or last examination marksheet."
+        },
+        {
+          "label": "KET’s V. G. Vaze College notice VC/2025-26/SFC/532, 11/02/2026",
+          "url": "https://vazecollege.net/wp-content/uploads/2026/02/Notice-for-Reserve-Caste-Cetogary-Students-SFC-for-2025-26.pdf",
+          "kind": "college-notice",
+          "quote": "Domicile Certificate (for Applicant)"
+        },
+        {
+          "label": "KET’s V. G. Vaze College notice VC/2025-26/SFC/532, 11/02/2026",
+          "url": "https://vazecollege.net/wp-content/uploads/2026/02/Notice-for-Reserve-Caste-Cetogary-Students-SFC-for-2025-26.pdf",
+          "kind": "college-notice",
+          "quote": "Bank Adhar Seeding Form (available in MahaDBT Portal)"
+        },
+        {
+          "label": "College notice: MahaDBT Scholarship Application Process for 2025-26 (tirpude.edu.in)",
+          "url": "https://www.tirpude.edu.in/wp-content/uploads/2025/10/Notice-of-Scholarship-2025.pdf",
+          "kind": "college-notice",
+          "quote": "College Bonafide Certificate"
+        },
+        {
+          "label": "College notice: Scholarship Notice AY 2025-26 (mitcorer.edu.in)",
+          "url": "https://mitcorer.edu.in/pdf/Fy-Pdf/Scholarship-Notice-AY-2025-26.pdf",
+          "kind": "college-notice",
+          "quote": "Bank Passbook (Adhar Link)"
+        }
+      ],
+      "lastChecked": "2026-10-28"
+    },
+    {
+      "id": "right-document",
+      "type": "document_check",
+      "label": "Right document in each slot",
+      "severity": "critical",
+      "issueTitle": "A file is in the wrong slot",
+      "issueDoc": "Document upload",
+      "why": {
+        "en": "Each upload option on MahaDBT expects one kind of document, so a file of the wrong kind may be sent back.",
+        "mr": "MahaDBT वरील प्रत्येक अपलोड पर्यायात एका विशिष्ट प्रकारचे कागदपत्र अपेक्षित असते; चुकीची फाइल परत पाठवली जाऊ शकते.",
+        "hi": "MahaDBT के हर अपलोड विकल्प में एक खास तरह का दस्तावेज़ चाहिए; गलत फ़ाइल वापस भेजी जा सकती है।"
+      },
+      "fix": {
+        "en": "Upload the correct, legible document in this slot.",
+        "mr": "या जागी योग्य आणि वाचता येणारे कागदपत्र अपलोड करा.",
+        "hi": "इस जगह सही और पढ़ने योग्य दस्तावेज़ अपलोड करें।"
+      },
+      "source": {
+        "label": "KET’s V. G. Vaze College notice VC/2025-26/SFC/532, 11/02/2026",
+        "url": "https://vazecollege.net/wp-content/uploads/2026/02/Notice-for-Reserve-Caste-Cetogary-Students-SFC-for-2025-26.pdf",
+        "kind": "college-notice"
+      },
+      "usesAi": true,
+      "version": "2.0.0",
+      "status": "verified",
+      "evidence": [
+        {
+          "label": "KET’s V. G. Vaze College notice VC/2025-26/SFC/532, 11/02/2026",
+          "url": "https://vazecollege.net/wp-content/uploads/2026/02/Notice-for-Reserve-Caste-Cetogary-Students-SFC-for-2025-26.pdf",
+          "kind": "college-notice",
+          "quote": "OBC, SBC & VJNT category students should upload the Income Certificate & Non Creamy layer Certificate merge in one PDF format and upload in option of Income certificate."
+        }
+      ],
+      "lastChecked": "2026-10-28"
+    },
+    {
+      "id": "income-financial-year",
+      "type": "date_window",
+      "label": "Income certificate from this financial year",
+      "severity": "critical",
+      "issueTitle": "Income certificate is from last financial year",
+      "issueDoc": "Income certificate",
+      "slot": "income_certificate",
+      "field": "issueDate",
+      "window": "indian_fy",
+      "why": {
+        "en": "Some guides say an income certificate from an earlier financial year may be sent back. College notices differ on which year is needed, so check with your college.",
+        "mr": "काही मार्गदर्शकांनुसार मागील आर्थिक वर्षातील उत्पन्न प्रमाणपत्र परत पाठवले जाऊ शकते. कोणते वर्ष हवे यावर महाविद्यालयांच्या सूचना वेगळ्या आहेत, म्हणून तुमच्या महाविद्यालयाला विचारा.",
+        "hi": "कुछ मार्गदर्शिकाओं के अनुसार पिछले वित्त वर्ष का आय प्रमाणपत्र वापस भेजा जा सकता है। कौन-सा वर्ष चाहिए, इस पर कॉलेजों की सूचनाएं अलग हैं, इसलिए अपने कॉलेज से पूछें।"
+      },
+      "fix": {
+        "en": "Get a new income certificate from the Tehsildar office, issued on or after 1 April {year}.",
+        "mr": "तहसील कार्यालयातून १ एप्रिल {year} रोजी किंवा त्यानंतर दिलेले नवीन उत्पन्न प्रमाणपत्र मिळवा.",
+        "hi": "तहसील कार्यालय से 1 अप्रैल {year} को या उसके बाद जारी नया आय प्रमाणपत्र लें।"
+      },
+      "source": {
+        "label": "College notice: MahaDBT Scholarship Application Process for 2025-26 (tirpude.edu.in)",
+        "url": "https://www.tirpude.edu.in/wp-content/uploads/2025/10/Notice-of-Scholarship-2025.pdf",
+        "kind": "college-notice"
+      },
+      "usesAi": false,
+      "version": "2.0.0",
+      "status": "conflicting",
+      "evidence": [
+        {
+          "label": "College notice: Scholarship Notice AY 2025-26 (mitcorer.edu.in)",
+          "url": "https://mitcorer.edu.in/pdf/Fy-Pdf/Scholarship-Notice-AY-2025-26.pdf",
+          "kind": "college-notice",
+          "quote": "Income Certificate (Financial Year 2024-25)"
+        },
+        {
+          "label": "College notice: MahaDBT Scholarship Application Process for 2025-26 (tirpude.edu.in)",
+          "url": "https://www.tirpude.edu.in/wp-content/uploads/2025/10/Notice-of-Scholarship-2025.pdf",
+          "kind": "college-notice",
+          "quote": "Income Certificate for 2025-26 (Parent/Guardian)"
+        },
+        {
+          "label": "MahaDBT 2.0 guide (anantamias.com)",
+          "url": "https://anantamias.com/mahadbt/",
+          "kind": "secondary",
+          "quote": "Income certificate issued in the current financial year; an older one gets the application rejected"
+        }
+      ],
+      "lastChecked": "2026-10-28"
+    },
+    {
+      "id": "income-ncl",
+      "type": "conditional",
+      "label": "Income + non-creamy layer in one PDF",
+      "severity": "critical",
+      "issueTitle": "Non-creamy layer certificate is missing from the PDF",
+      "issueDoc": "Income certificate + non-creamy layer",
+      "when": {
+        "formField": "category",
+        "in": [
+          "OBC",
+          "SBC",
+          "VJNT"
+        ]
+      },
+      "slot": "income_certificate",
+      "mustContain": [
+        "income_certificate",
+        "non_creamy_layer"
+      ],
+      "needed": "Income and non-creamy layer certificates merged in one PDF",
+      "why": {
+        "en": "A college notice asks OBC, SBC and VJNT applicants to upload both certificates merged in one PDF in the income certificate slot; otherwise the application may be sent back.",
+        "mr": "महाविद्यालयाच्या सूचनेनुसार OBC, SBC व VJNT अर्जदारांनी दोन्ही प्रमाणपत्रे एकाच PDF मध्ये जोडून उत्पन्न प्रमाणपत्राच्या जागी अपलोड करावीत; नाहीतर अर्ज परत पाठवला जाऊ शकतो.",
+        "hi": "कॉलेज की सूचना के अनुसार OBC, SBC और VJNT आवेदक दोनों प्रमाणपत्र एक ही PDF में जोड़कर आय प्रमाणपत्र वाली जगह अपलोड करें; अन्यथा आवेदन वापस भेजा जा सकता है।"
+      },
+      "fix": {
+        "en": "Merge your income certificate and non-creamy layer certificate into one PDF, then upload it in the income certificate slot.",
+        "mr": "उत्पन्न प्रमाणपत्र आणि नॉन-क्रिमीलेयर प्रमाणपत्र एकाच PDF मध्ये जोडा आणि उत्पन्न प्रमाणपत्राच्या जागी अपलोड करा.",
+        "hi": "आय प्रमाणपत्र और नॉन-क्रीमी लेयर प्रमाणपत्र को एक ही PDF में जोड़ें और आय प्रमाणपत्र वाली जगह अपलोड करें।"
+      },
+      "source": {
+        "label": "KET’s V. G. Vaze College notice VC/2025-26/SFC/532, 11/02/2026",
+        "url": "https://vazecollege.net/wp-content/uploads/2026/02/Notice-for-Reserve-Caste-Cetogary-Students-SFC-for-2025-26.pdf",
+        "kind": "college-notice"
+      },
+      "usesAi": true,
+      "version": "2.0.0",
+      "status": "verified",
+      "evidence": [
+        {
+          "label": "KET’s V. G. Vaze College notice VC/2025-26/SFC/532, 11/02/2026",
+          "url": "https://vazecollege.net/wp-content/uploads/2026/02/Notice-for-Reserve-Caste-Cetogary-Students-SFC-for-2025-26.pdf",
+          "kind": "college-notice",
+          "quote": "OBC, SBC & VJNT category students should upload the Income Certificate & Non Creamy layer Certificate merge in one PDF format and upload in option of Income certificate."
+        }
+      ],
+      "lastChecked": "2026-10-28"
+    },
+    {
+      "id": "name-match",
+      "type": "cross_document_match",
+      "label": "Name matches across documents",
+      "severity": "critical",
+      "issueTitle": "Your name is spelled differently on two documents",
+      "issueDoc": "Income certificate · Marksheet",
+      "formField": "fullName",
+      "slots": [
+        "aadhaar",
+        "caste_certificate",
+        "income_certificate",
+        "domicile",
+        "bonafide",
+        "marksheet",
+        "bank_passbook"
+      ],
+      "why": {
+        "en": "Guides say the name must match across the form and documents; a mismatch may be sent back. Only secondary sources say so for now.",
+        "mr": "मार्गदर्शकांनुसार अर्जातील आणि कागदपत्रांतील नाव जुळले पाहिजे; न जुळल्यास अर्ज परत पाठवला जाऊ शकतो. सध्या फक्त दुय्यम स्रोत असे सांगतात.",
+        "hi": "मार्गदर्शिकाओं के अनुसार फ़ॉर्म और दस्तावेज़ों में नाम मेल खाना चाहिए; न खाए तो आवेदन वापस भेजा जा सकता है। अभी केवल द्वितीयक स्रोत ऐसा कहते हैं।"
+      },
+      "fix": {
+        "en": "Check which spelling matches your Aadhaar, then get the other document corrected before you submit. Ask your college scholarship desk how.",
+        "mr": "तुमच्या आधारवरील स्पेलिंग तपासा आणि सबमिट करण्यापूर्वी दुसरे कागदपत्र दुरुस्त करून घ्या. कसे करायचे ते महाविद्यालयाच्या शिष्यवृत्ती विभागाला विचारा.",
+        "hi": "आधार पर लिखी स्पेलिंग जांचें और जमा करने से पहले दूसरा दस्तावेज़ ठीक करवाएं। तरीका कॉलेज के छात्रवृत्ति विभाग से पूछें।"
+      },
+      "source": {
+        "label": "MahaDBT 2.0 guide (anantamias.com)",
+        "url": "https://anantamias.com/mahadbt/",
+        "kind": "secondary"
+      },
+      "usesAi": true,
+      "version": "2.0.0",
+      "status": "pending",
+      "evidence": [
+        {
+          "label": "MahaDBT 2.0 guide (anantamias.com)",
+          "url": "https://anantamias.com/mahadbt/",
+          "kind": "secondary",
+          "quote": "Your MahaDBT name comes from Aadhaar."
+        },
+        {
+          "label": "MahaDBT 2.0 guide (anantamias.com)",
+          "url": "https://anantamias.com/mahadbt/",
+          "kind": "secondary",
+          "quote": "Correct Aadhaar, or get the certificate corrected so both match."
+        },
+        {
+          "label": "CareerIndia: MahaDBT verification steps",
+          "url": "https://www.careerindia.com/news/mahadbt-1-0-portal-closing-today-urgent-scholarship-verification-steps-2026-011-65787.html",
+          "kind": "secondary",
+          "quote": "Re-check name order, date of birth, and category fields."
+        }
+      ],
+      "lastChecked": "2026-10-28"
+    },
+    {
+      "id": "dob-match",
+      "type": "field_consistency",
+      "label": "Date of birth matches Aadhaar",
+      "severity": "critical",
+      "issueTitle": "Date of birth differs from your Aadhaar",
+      "issueDoc": "Aadhaar",
+      "formField": "dateOfBirth",
+      "slot": "aadhaar",
+      "docField": "dateOfBirth",
+      "format": "date",
+      "why": {
+        "en": "A guide says to re-check the date of birth against your documents; a mismatch may be sent back. Only a secondary source says so for now.",
+        "mr": "एका मार्गदर्शकानुसार जन्मतारीख कागदपत्रांशी पुन्हा तपासावी; न जुळल्यास अर्ज परत पाठवला जाऊ शकतो. सध्या फक्त दुय्यम स्रोत असे सांगतो.",
+        "hi": "एक मार्गदर्शिका के अनुसार जन्मतिथि दस्तावेज़ों से दोबारा मिलाएं; न मिले तो आवेदन वापस भेजा जा सकता है। अभी केवल द्वितीयक स्रोत ऐसा कहता है।"
+      },
+      "fix": {
+        "en": "Correct the date of birth on the form, or get your Aadhaar updated.",
+        "mr": "अर्जातील जन्मतारीख दुरुस्त करा किंवा आधार अद्ययावत करून घ्या.",
+        "hi": "फ़ॉर्म की जन्मतिथि सुधारें या आधार अपडेट करवाएं।"
+      },
+      "source": {
+        "label": "CareerIndia: MahaDBT verification steps",
+        "url": "https://www.careerindia.com/news/mahadbt-1-0-portal-closing-today-urgent-scholarship-verification-steps-2026-011-65787.html",
+        "kind": "secondary"
+      },
+      "usesAi": false,
+      "version": "2.0.0",
+      "status": "pending",
+      "evidence": [
+        {
+          "label": "CareerIndia: MahaDBT verification steps",
+          "url": "https://www.careerindia.com/news/mahadbt-1-0-portal-closing-today-urgent-scholarship-verification-steps-2026-011-65787.html",
+          "kind": "secondary",
+          "quote": "Re-check name order, date of birth, and category fields."
+        }
+      ],
+      "lastChecked": "2026-10-28"
+    },
+    {
+      "id": "category-match",
+      "type": "field_consistency",
+      "label": "Category matches caste certificate",
+      "severity": "critical",
+      "issueTitle": "Category differs from your caste certificate",
+      "issueDoc": "Caste certificate",
+      "formField": "category",
+      "slot": "caste_certificate",
+      "docField": "category",
+      "format": "text",
+      "why": {
+        "en": "A college notice says you must possess a valid caste certificate for your category. No source yet says the form category must equal the certificate’s, so this is not applied.",
+        "mr": "महाविद्यालयाच्या सूचनेनुसार तुमच्या प्रवर्गाचे वैध जात प्रमाणपत्र असणे आवश्यक आहे. अर्जातील प्रवर्ग प्रमाणपत्रावरील प्रवर्गाशी जुळावा असे कोणताही स्रोत अद्याप सांगत नाही, म्हणून हे लागू केलेले नाही.",
+        "hi": "कॉलेज की सूचना के अनुसार आपकी श्रेणी का वैध जाति प्रमाणपत्र होना चाहिए। फ़ॉर्म की श्रेणी का प्रमाणपत्र से मेल खाना चाहिए, यह कोई स्रोत अभी नहीं कहता, इसलिए इसे लागू नहीं किया गया।"
+      },
+      "fix": {
+        "en": "Select the category shown on your caste certificate.",
+        "mr": "जात प्रमाणपत्रावरील प्रवर्ग निवडा.",
+        "hi": "जाति प्रमाणपत्र पर दी गई श्रेणी चुनें।"
+      },
+      "source": {
+        "label": "College notice: MahaDBT Scholarship Application Process for 2025-26 (tirpude.edu.in)",
+        "url": "https://www.tirpude.edu.in/wp-content/uploads/2025/10/Notice-of-Scholarship-2025.pdf",
+        "kind": "college-notice"
+      },
+      "usesAi": false,
+      "version": "2.0.0",
+      "status": "pending",
+      "evidence": [
+        {
+          "label": "College notice: MahaDBT Scholarship Application Process for 2025-26 (tirpude.edu.in)",
+          "url": "https://www.tirpude.edu.in/wp-content/uploads/2025/10/Notice-of-Scholarship-2025.pdf",
+          "kind": "college-notice",
+          "quote": "Category : Must belong to SC, ST, OBC, SBC, VJNT, or SEBC and possess a valid caste certificate."
+        },
+        {
+          "label": "CareerIndia: MahaDBT verification steps",
+          "url": "https://www.careerindia.com/news/mahadbt-1-0-portal-closing-today-urgent-scholarship-verification-steps-2026-011-65787.html",
+          "kind": "secondary",
+          "quote": "Re-check name order, date of birth, and category fields."
+        }
+      ],
+      "lastChecked": "2026-10-28"
+    },
+    {
+      "id": "income-limit",
+      "type": "numeric_max",
+      "label": "Family income within scheme limit",
+      "severity": "critical",
+      "issueTitle": "Family income is above the scheme limit",
+      "issueDoc": "Income certificate",
+      "slot": "income_certificate",
+      "docField": "annualIncome",
+      "max": 800000,
+      "why": {
+        "en": "There is a family income limit, but the official page and two college notices give three different figures, so FormSure does not apply one.",
+        "mr": "कौटुंबिक उत्पन्न मर्यादा आहे, पण अधिकृत पान आणि दोन महाविद्यालयीन सूचना तीन वेगवेगळे आकडे देतात, म्हणून FormSure एकही लागू करत नाही.",
+        "hi": "पारिवारिक आय की सीमा है, पर आधिकारिक पृष्ठ और दो कॉलेज सूचनाएं तीन अलग आंकड़े देती हैं, इसलिए FormSure कोई एक लागू नहीं करता।"
+      },
+      "fix": {
+        "en": "Check the current income limit on the official MahaDBT scheme page.",
+        "mr": "अधिकृत MahaDBT योजना पानावर सध्याची उत्पन्न मर्यादा तपासा.",
+        "hi": "आधिकारिक MahaDBT योजना पृष्ठ पर वर्तमान आय सीमा जांचें।"
+      },
+      "source": {
+        "label": "MahaDBT scheme page: Post Matric Scholarship to OBC Students",
+        "url": "https://mahadbt.maharashtra.gov.in/SchemeData/SchemeData?str=E9DDFA703C38E51AB02E984835E89FEFDB316E301CE6A991F41C5D42B01A7D7E",
+        "kind": "official"
+      },
+      "usesAi": false,
+      "version": "2.0.0",
+      "status": "conflicting",
+      "evidence": [
+        {
+          "label": "MahaDBT scheme page: Post Matric Scholarship to OBC Students",
+          "url": "https://mahadbt.maharashtra.gov.in/SchemeData/SchemeData?str=E9DDFA703C38E51AB02E984835E89FEFDB316E301CE6A991F41C5D42B01A7D7E",
+          "kind": "official",
+          "quote": "The parents/Guardians annual Income should be less than or equal to Rs.2.50 Lac."
+        },
+        {
+          "label": "College notice: Scholarship Notice AY 2025-26 (mitcorer.edu.in)",
+          "url": "https://mitcorer.edu.in/pdf/Fy-Pdf/Scholarship-Notice-AY-2025-26.pdf",
+          "kind": "college-notice",
+          "quote": "Up to 1.50 Lakhs Post Matric Scholarship to VINT, OBC & SBC Students"
+        },
+        {
+          "label": "College notice: MahaDBT Scholarship Application Process for 2025-26 (tirpude.edu.in)",
+          "url": "https://www.tirpude.edu.in/wp-content/uploads/2025/10/Notice-of-Scholarship-2025.pdf",
+          "kind": "college-notice",
+          "quote": "OBC, SBC, VJNT & SEBC : 8,00,000 or less."
+        }
+      ],
+      "lastChecked": "2026-10-28"
+    }
+  ],
+  "version": "2.0.0",
+  "academicYear": "2025-26"
+}

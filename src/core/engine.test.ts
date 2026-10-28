@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_SLOTS, NOW, audit, checkOf, fixed, patchDoc, sample, statusOf, withoutDoc } from '../test/docs';
+import { ALL_SLOTS, NOW, allRulesPack, audit, checkOf, fixed, patchDoc, sample, shippedAudit, statusOf, verifying, withoutDoc } from '../test/docs';
 import { assertNever } from './assertNever';
 import { fyLabel, fyStartYear, longDate } from './dates';
 import { mahadbtPack } from './schema';
 
-describe('sample fixtures', () => {
+describe('sample fixtures with every verifiable rule applied (tests the evaluators)', () => {
   it('error set: exactly 3 failures and readiness 57', () => {
     const r = audit(sample.errorDocuments);
     expect(r.checks).toHaveLength(8);
@@ -75,12 +75,7 @@ describe('no false passes: anything that cannot be verified needs review', () =>
     expect(statusOf(patchDoc(fixed, 'aadhaar', { dateOfBirth: null }), 'dob-match')).toBe('needs_review');
   });
 
-  it('an unverified rule is not evaluated, even when the data would fail it', () => {
-    const r = audit(patchDoc(fixed, 'income_certificate', { annualIncome: 9_000_000 }));
-    expect(checkOf(r, 'income-limit').status).toBe('not_evaluated');
-    expect(r.failed).toBe(0);
   });
-});
 
 describe('required_document and document_check', () => {
   it('names every missing document', () => {
@@ -143,14 +138,47 @@ describe('field_consistency', () => {
   });
 });
 
-describe('numeric_max (when a verified rule applies it)', () => {
-  const verified = { ...mahadbtPack, rules: mahadbtPack.rules.map((r) => (r.id === 'income-limit' ? { ...r, verified: true } : r)) };
-  const statusFor = (annualIncome: number | null) => checkOf(audit(patchDoc(fixed, 'income_certificate', { annualIncome }), sample.form, NOW, verified), 'income-limit').status;
+describe('numeric_max', () => {
+  const pack = verifying(['income-limit']);
+  const statusFor = (annualIncome: number | null) =>
+    checkOf(audit(patchDoc(fixed, 'income_certificate', { annualIncome }), sample.form, NOW, pack), 'income-limit').status;
 
   it('passes at the maximum, fails above it, needs review when unreadable', () => {
     expect(statusFor(800_000)).toBe('pass');
     expect(statusFor(9_000_000)).toBe('fail');
     expect(statusFor(null)).toBe('needs_review');
+  });
+});
+
+describe('the shipped pack applies only rules backed by an official source or a college notice', () => {
+  it('evaluates exactly the two verified rules and skips the rest', () => {
+    const r = shippedAudit(sample.errorDocuments);
+    const byStatus = (s: string) => r.checks.filter((c) => c.status === s).map((c) => c.ruleId);
+    expect(byStatus('pass')).toEqual(['right-document']);
+    expect(byStatus('fail')).toEqual(['income-ncl']);
+    expect(byStatus('not_evaluated')).toEqual(['required-documents', 'income-financial-year', 'name-match', 'dob-match', 'category-match', 'income-limit']);
+  });
+  it('says why: sources conflict, or not verified yet', () => {
+    const r = shippedAudit(sample.errorDocuments);
+    expect(checkOf(r, 'income-financial-year').detail).toBe('Sources conflict, rule skipped');
+    expect(checkOf(r, 'income-limit').detail).toBe('Sources conflict, rule skipped');
+    expect(checkOf(r, 'name-match').detail).toBe('Rule not verified yet, skipped');
+  });
+  it('sample numbers: 50% with one issue, then 100%', () => {
+    const bad = shippedAudit(sample.errorDocuments);
+    expect([bad.passed, bad.failed, bad.needsReview, bad.notEvaluated, bad.readiness]).toEqual([1, 1, 0, 6, 50]);
+    const good = shippedAudit(fixed);
+    expect([good.passed, good.failed, good.needsReview, good.notEvaluated, good.readiness]).toEqual([2, 0, 0, 6, 100]);
+  });
+  it('a rule marked verified but backed only by secondary sources is still not evaluated', () => {
+    const secondaryOnly = { ...allRulesPack, rules: allRulesPack.rules.map((r) => (r.id === 'name-match' ? { ...r, evidence: r.evidence.filter((e) => e.kind === 'secondary') } : r)) };
+    expect(checkOf(audit(sample.errorDocuments, sample.form, NOW, secondaryOnly), 'name-match').status).toBe('not_evaluated');
+  });
+  it('a conflicting rule is not evaluated even when its data would fail it', () => {
+    expect(checkOf(shippedAudit(patchDoc(fixed, 'income_certificate', { annualIncome: 9_000_000 })), 'income-limit').status).toBe('not_evaluated');
+  });
+  it('every result carries the evidence year of the pack', () => {
+    expect(new Set(shippedAudit(fixed).checks.map((c) => c.academicYear))).toEqual(new Set(['2025-26']));
   });
 });
 
