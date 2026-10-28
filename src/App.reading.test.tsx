@@ -16,7 +16,7 @@ vi.mock('./services/rateLimiter', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./services/rateLimiter')>()),
   geminiLimiter: { acquire: async () => undefined },
 }));
-vi.mock('./core/constants', async (importOriginal) => ({ ...(await importOriginal<typeof import('./core/constants')>()), READ_GAP_MS: 0 }));
+vi.mock('./core/constants', async (importOriginal) => ({ ...(await importOriginal<typeof import('./core/constants')>()), READ_STAGGER_MS: 0 }));
 
 beforeAll(() => {
   (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ = true;
@@ -42,8 +42,8 @@ async function chooseThreeAndRun(user: User) {
   await clickRun(user);
 }
 
-describe('live reading: one file at a time, with visible progress', () => {
-  it('never reads two files at once, in slot order, showing "Reading n of N…"', async () => {
+describe('live reading: two files at a time, with visible progress', () => {
+  it('reads at most two files at once, starts the third when one finishes, and shows "Reading n of N…"', async () => {
     const user = userEvent.setup();
     let running = 0;
     let most = 0;
@@ -54,25 +54,26 @@ describe('live reading: one file at a time, with visible progress', () => {
       running--;
       return MARKSHEET_JSON;
     });
-    const releaseNext = async () => {
-      await waitFor(() => expect(release.length).toBeGreaterThan(0)); // the request is registered after the file is encoded
-      await act(async () => release.shift()?.());
-    };
     render(<App />);
     await chooseThreeAndRun(user);
 
-    expect(await screen.findByText('Reading 1 of 3…')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'Documents read' })).toHaveAttribute('aria-valuemax', '3');
-    await releaseNext();
-    expect(await screen.findByText('Reading 2 of 3…')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar', { name: 'Documents read' })).toHaveAttribute('aria-valuenow', '1');
-    await releaseNext();
+    await waitFor(() => expect(release).toHaveLength(2)); // two in flight; the third waits for a free slot
+    expect(hoisted.generate).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText('Reading 2 of 3…')).toBeInTheDocument(); // the most recently started
+    const bar = screen.getByRole('progressbar', { name: 'Documents read' });
+    expect(bar).toHaveAttribute('aria-valuemax', '3');
+    expect(bar).toHaveAttribute('aria-valuenow', '1');
+
+    await act(async () => release.shift()?.()); // one finishes, so the third starts
     expect(await screen.findByText('Reading 3 of 3…')).toBeInTheDocument();
-    await releaseNext();
+    await waitFor(() => expect(release).toHaveLength(2));
+    await act(async () => {
+      release.splice(0).forEach((r) => r());
+    });
 
     expect(await screen.findByRole('button', { name: /see readiness report/i })).toBeInTheDocument();
     expect(hoisted.generate).toHaveBeenCalledTimes(3);
-    expect(most).toBe(1);
+    expect(most).toBe(2);
   });
 
   it('shows "Gemini is busy, retrying in Ns…" after a 429, does not count it as a failure, then carries on', async () => {
@@ -94,7 +95,7 @@ describe('live reading: one file at a time, with visible progress', () => {
     expect(hoisted.generate).toHaveBeenCalledTimes(4); // 1 rate-limited + 3 files
   });
 
-  it('after the last backoff, says Gemini is busy, keeps the other files, and returns to the upload screen', async () => {
+  it('after the last backoff, says Gemini is busy, stops starting reads, and returns to the upload screen with a retry per failed file', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
@@ -105,8 +106,8 @@ describe('live reading: one file at a time, with visible progress', () => {
       await vi.advanceTimersByTimeAsync(75_000); // 10 + 20 + 40 s
     });
     expect(await screen.findByRole('alert')).toHaveTextContent(/Gemini is still busy.*Retry this file/);
-    expect(hoisted.generate).toHaveBeenCalledTimes(4);
-    expect(screen.getAllByRole('button', { name: /retry this file/i })).toHaveLength(1);
+    expect(hoisted.generate).toHaveBeenCalledTimes(8); // two reads in flight, each tried once and retried three times
+    expect(screen.getAllByRole('button', { name: /retry this file/i })).toHaveLength(2); // the third file never started
   });
 });
 

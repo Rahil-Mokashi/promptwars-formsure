@@ -6,7 +6,7 @@ export function ScoreCard({ report }: { report: AuditReport }) {
   const notEvaluated = report.checks.filter((c) => c.status === 'not_evaluated');
   return (
     <section className="card ringcard" aria-label="Readiness score">
-      <Ring pct={report.readiness} />
+      <Ring pct={report.readiness} counts={{ passed: report.passed, failed: report.failed, needsReview: report.needsReview }} />
       <div className="stats">
         <div className="stat"><b style={{ color: '#047857' }}>{report.passed}</b><span>Passed</span></div>
         <div className="stat"><b style={{ color: '#BE123C' }}>{report.failed}</b><span>To fix</span></div>

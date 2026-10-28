@@ -25,6 +25,7 @@ export function Header({ screen, lang, onLang, onHome }: HeaderProps) {
   const current = STEP_OF[screen] ?? 0;
   return (
     <header className="top">
+      <a className="skip" href="#main">Skip to main content</a>
       <div className="wrap topin">
         <button className="brand" onClick={onHome} aria-label="FormSure, back to start">
           <span className="logo"><ShieldIcon /></span>

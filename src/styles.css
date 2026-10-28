@@ -235,3 +235,6 @@ label.btn:focus-within{outline:3px solid #A5B4FC;outline-offset:2px}
 .consent input{width:24px;height:24px;flex:none;margin:0;accent-color:#4338CA}
 
 .srckind{font-size:12px;color:#5B6478;margin-top:2px}
+
+.skip{position:absolute;left:-9999px;top:8px;z-index:50;padding:12px 18px;border-radius:10px;background:#0E1525;color:#fff;font-weight:700;text-decoration:none}
+.skip:focus,.skip:focus-visible{left:12px}

@@ -19,8 +19,11 @@ export const RATE_LIMIT_BACKOFF_SECONDS: readonly number[] = [10, 20, 40];
 /** A timed-out request is retried this many times (schema errors are never retried). */
 export const TIMEOUT_RETRIES = 1;
 
-/** Pause between two files so the free-tier request rate stays low. */
-export const READ_GAP_MS = 4000;
+/** Files read at the same time. */
+export const READ_CONCURRENCY = 2;
+
+/** Time between the start of one file read and the start of the next, so the free-tier request rate stays low. */
+export const READ_STAGGER_MS = 2000;
 
 /** Client-side limiter: at most this many Gemini calls in any rolling window. */
 export const MAX_REQUESTS_PER_WINDOW = 8;
@@ -66,3 +69,6 @@ export const MAX_REQUESTS_PER_DAY = 60;
 
 /** Length of the daily window. */
 export const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Key under which the limiter keeps call timestamps (numbers only) in sessionStorage. */
+export const LIMITER_STORAGE_KEY = 'formsure.limiter.v1';

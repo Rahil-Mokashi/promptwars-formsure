@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { READ_GAP_MS, UNAVAILABLE_MESSAGE } from '../core/constants';
+import { READ_CONCURRENCY, READ_STAGGER_MS, UNAVAILABLE_MESSAGE } from '../core/constants';
 import { ExtractionError, UnavailableError } from '../core/errors';
 import { maskAadhaar } from '../core/mask';
 import type { DocumentsBySlot, ReadProgress, SlotId, SlotReadState } from '../core/types';
@@ -60,7 +60,8 @@ export function useDocumentReader(files: Files): DocumentReader {
       cache: cache.current,
       extract: (file, options) => extract(file, options),
       pause: sleep,
-      gapMs: READ_GAP_MS,
+      concurrency: READ_CONCURRENCY,
+      staggerMs: READ_STAGGER_MS,
       onProgress: setProgress,
       onSlotDone: (slotId, message) => {
         const doc = cache.current.get(slotId)?.doc;

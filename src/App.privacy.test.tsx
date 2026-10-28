@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { act, configure, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -9,7 +11,7 @@ import { clickRun } from './test/ui';
 const hoisted = vi.hoisted(() => ({ generate: vi.fn<(req: GenerateRequest) => Promise<string>>() }));
 vi.mock('./services/firebase', () => ({ createFirebaseGenerate: () => hoisted.generate, isLiveReadingAvailable: () => true }));
 vi.mock('./services/rateLimiter', async (importOriginal) => ({ ...(await importOriginal<typeof import('./services/rateLimiter')>()), geminiLimiter: { acquire: async () => undefined } }));
-vi.mock('./core/constants', async (importOriginal) => ({ ...(await importOriginal<typeof import('./core/constants')>()), READ_GAP_MS: 0 }));
+vi.mock('./core/constants', async (importOriginal) => ({ ...(await importOriginal<typeof import('./core/constants')>()), READ_STAGGER_MS: 0 }));
 
 beforeAll(() => {
   (globalThis as { __REDUCE_MOTION__?: boolean }).__REDUCE_MOTION__ = true;
@@ -99,5 +101,24 @@ describe('privacy: nothing is stored, nothing sensitive is logged', () => {
       window.dispatchEvent(new Event('pagehide'));
     });
     await waitFor(() => expect(screen.queryByText('a.pdf')).toBeNull());
+  });
+});
+
+describe('browser storage use is confined to the limiter', () => {
+  const sourceFiles = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? sourceFiles(`${dir}/${e.name}`) : /\.(ts|tsx)$/.test(e.name) && !/\.test\.|test-setup|\/test\//.test(`${dir}/${e.name}`) ? [`${dir}/${e.name}`] : [],
+    );
+
+  it('no application file uses localStorage, IndexedDB or the Cache API, and only rateLimiter.ts uses sessionStorage', () => {
+    const files = sourceFiles(resolve(__dirname));
+    expect(files.length).toBeGreaterThan(30);
+    for (const file of files) {
+      const code = readFileSync(file, 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, ''); // comments may mention storage
+      expect(code, file).not.toMatch(/\blocalStorage\b|\bindexedDB\b|\bcaches\.(open|match)\b/);
+      if (!file.replace(/\\/g, '/').endsWith('services/rateLimiter.ts')) expect(code, file).not.toMatch(/\bsessionStorage\b/);
+    }
   });
 });

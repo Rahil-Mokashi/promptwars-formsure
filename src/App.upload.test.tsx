@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { mislabelledFile, pdfFile, pngFile } from './test/files';
@@ -64,7 +64,7 @@ describe('upload validation in the browser', () => {
     await screen.findByText('a.pdf');
     expect(run).toBeDisabled(); // still no consent
     await user.click(screen.getByRole('checkbox', { name: /sent to Google Gemini via Firebase only to read them/ }));
-    expect(run).toBeEnabled();
+    await waitFor(() => expect(run).toBeEnabled());
   });
 });
 
@@ -92,6 +92,16 @@ describe('language toggle', () => {
 });
 
 describe('keyboard navigation', () => {
+  it('the first Tab stop is a Skip to main content link that targets the main landmark', async () => {
+    const user = setup();
+    render(<App />);
+    await user.tab();
+    const skip = screen.getByRole('link', { name: 'Skip to main content' });
+    expect(skip).toHaveFocus();
+    expect(skip).toHaveAttribute('href', '#main');
+    expect(document.getElementById('main')?.tagName).toBe('MAIN');
+  });
+
   it('reaches "Try sample applicant" with Tab and activates it with Enter', async () => {
     const user = setup();
     render(<App />);
