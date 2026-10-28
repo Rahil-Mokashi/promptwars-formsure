@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FormSure prototype</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+Devanagari:wght@400;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F6F7FB}
+a{color:#4338CA}a:hover{color:#3730A3}
+.fs{font-family:'Plus Jakarta Sans','Noto Sans Devanagari',system-ui,sans-serif;color:#0E1525;background:#F6F7FB;min-height:100vh;-webkit-font-smoothing:antialiased}
+.dev{font-family:'Noto Sans Devanagari','Plus Jakarta Sans',sans-serif}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px;box-sizing:border-box}
+.top{position:sticky;top:0;z-index:5;background:rgba(246,247,251,.92);backdrop-filter:blur(8px);border-bottom:1px solid #E4E7EF}
+.topin{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;background:none;border:0;padding:6px;margin-left:-6px;cursor:pointer;font:800 19px/1 inherit;color:#0E1525;letter-spacing:-.01em;border-radius:10px}
+.brand:focus-visible,.btn:focus-visible,.lang:focus-visible,.scheme:focus-visible,.issue-head:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #A5B4FC;outline-offset:2px}
+.logo{width:32px;height:32px;border-radius:9px;background:#4338CA;display:grid;place-items:center;color:#fff}
+.steps{display:flex;gap:6px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:999px;font-size:13px;font-weight:600;color:#5B6478}
+.stepnum{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;background:#E4E7EF;color:#5B6478}
+.step.on{background:#EEF0FF;color:#3730A3}.step.on .stepnum{background:#4338CA;color:#fff}
+.step.done{color:#047857}.step.done .stepnum{background:#D1FAE5;color:#047857}
+.langs{display:flex;gap:4px;background:#fff;border:1px solid #E4E7EF;border-radius:12px;padding:4px}
+.lang{border:0;background:none;padding:8px 12px;border-radius:9px;font:600 13px/1 inherit;color:#5B6478;cursor:pointer;min-height:36px}
+.lang.on{background:#0E1525;color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:12px;font:700 15px/1 inherit;border:1px solid transparent;cursor:pointer;text-decoration:none;transition:transform .15s ease,box-shadow .2s ease,background .2s ease}
+.btn:hover{transform:translateY(-1px)}.btn:active{transform:scale(.98)}
+.btn-primary{background:#4338CA;color:#fff;box-shadow:0 8px 20px rgba(67,56,202,.28)}
+.btn-primary:hover{background:#3730A3;color:#fff}
+.btn-ghost{background:#fff;color:#0E1525;border-color:#D7DBE6}
+.btn-ghost:hover{color:#0E1525;border-color:#B9BFD0}
+.btn-green{background:#047857;color:#fff;box-shadow:0 8px 20px rgba(4,120,87,.25)}
+.card{background:#fff;border:1px solid #E4E7EF;border-radius:16px;box-shadow:0 1px 2px rgba(14,21,37,.04),0 10px 28px rgba(14,21,37,.05)}
+.enter{animation:fadeUp .5s cubic-bezier(.22,1,.36,1) both}
+.stagger{animation:fadeUp .45s cubic-bezier(.22,1,.36,1) both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.h1{font-size:clamp(44px,6vw,76px);line-height:1.02;letter-spacing:-.035em;font-weight:800;margin:0}
+.h2{font-size:clamp(28px,3vw,38px);line-height:1.15;letter-spacing:-.025em;font-weight:800;margin:0}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#3730A3;background:#EEF0FF;padding:7px 12px;border-radius:999px;margin:0 0 22px}
+.lead{font-size:19px;line-height:1.6;color:#3F4759;margin:22px 0 32px;max-width:520px}
+.sub{font-size:16px;line-height:1.6;color:#5B6478;margin:10px 0 0;max-width:640px}
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:48px;align-items:center;padding-top:72px;padding-bottom:80px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.how{list-style:none;padding:0;margin:40px 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.how li{background:#fff;border:1px solid #E4E7EF;border-radius:14px;padding:14px;font-size:14px;font-weight:600;line-height:1.35}
+.hownum{display:block;font-size:12px;color:#4338CA;font-weight:800;margin-bottom:6px}
+.trust{display:flex;align-items:center;gap:8px;font-size:13px;color:#5B6478;margin:22px 0 0}
+.stack{position:relative;height:460px;max-width:520px;width:100%;justify-self:center}
+.doc{position:absolute;width:300px;background:#fff;border:1px solid #E4E7EF;border-radius:14px;padding:22px;box-sizing:border-box;box-shadow:0 20px 50px rgba(14,21,37,.10)}
+.doc-back{top:30px;left:6%;transform:rotate(-8deg);opacity:.75}
+.doc-mid{top:54px;right:4%;transform:rotate(6deg);opacity:.9}
+.doc-front{top:110px;left:18%;width:320px}
+.float{animation:float 6s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-10px)}}
+.docbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.docsample{font-size:11px;font-weight:700;color:#5B6478;border:1px dashed #B9BFD0;border-radius:6px;padding:3px 7px}
+.doctitle{font-size:20px;font-weight:600;margin:0 0 14px}
+.docline{height:8px;border-radius:4px;background:#EEF0F5;margin:0 0 9px}
+.w80{width:80%}.w60{width:60%}.w90{width:90%}.w40{width:40%}
+.docfield{font-size:14px;margin:12px 0 0;color:#0E1525}
+.hl{background:#FEF3C7;border-radius:4px;padding:1px 4px}
+.flag{position:relative;height:34px;margin-top:18px}
+.flag span{position:absolute;inset:0;display:flex;align-items:center;gap:6px;padding:0 12px;border-radius:9px;font-size:13px;font-weight:700}
+.flag-bad{background:#FFE4E6;color:#BE123C;animation:flagA 5s ease-in-out infinite}
+.flag-good{background:#D1FAE5;color:#047857;animation:flagB 5s ease-in-out infinite}
+@keyframes flagA{0%,42%{opacity:1}50%,92%{opacity:0}100%{opacity:1}}
+@keyframes flagB{0%,42%{opacity:0}50%,92%{opacity:1}100%{opacity:0}}
+.chipfloat{position:absolute;right:0;bottom:34px;background:#0E1525;color:#fff;border-radius:12px;padding:12px 14px;font-size:13px;font-weight:600;box-shadow:0 16px 40px rgba(14,21,37,.25);animation:float 7s ease-in-out infinite;animation-delay:-2s}
+.chipfloat small{display:block;color:#A5B4FC;font-size:11px;font-weight:700;margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase}
+.page{padding-top:48px;padding-bottom:72px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:24px;margin-top:28px}
+.schemes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:14px;margin-top:28px}
+.scheme{text-align:left;background:#fff;border:1.5px solid #E4E7EF;border-radius:16px;padding:18px;cursor:pointer;font:inherit;color:inherit;transition:border-color .2s,box-shadow .2s,transform .15s;min-height:132px;display:flex;flex-direction:column;gap:8px}
+.scheme:hover{transform:translateY(-2px)}
+.scheme.sel{border-color:#4338CA;box-shadow:0 0 0 4px #EEF0FF}
+.scheme.off{cursor:not-allowed;opacity:.7}
+.scheme.off:hover{transform:none}
+.sname{font-size:16px;font-weight:700;line-height:1.3}
+.sportal{font-size:13px;color:#5B6478}
+.pill{display:inline-flex;align-self:flex-start;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;margin-top:auto}
+.pill-on{background:#EEF0FF;color:#3730A3}.pill-off{background:#F1F2F6;color:#5B6478}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.field label{font-size:13px;font-weight:700;color:#3F4759}
+.field select,.field input{height:46px;border:1px solid #D7DBE6;border-radius:12px;padding:0 14px;font:500 15px/1 inherit;color:#0E1525;background:#fff}
+.panel{padding:24px}
+.ptitle{font-size:15px;font-weight:800;margin:0 0 4px}
+.pdesc{font-size:13px;color:#5B6478;margin:0 0 18px}
+.doclist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.doclist li{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #EEF0F5;border-radius:12px;font-size:14px;font-weight:600}
+.doclist .mr{display:block;font-size:12px;font-weight:400;color:#5B6478}
+.dicon{width:34px;height:34px;border-radius:10px;background:#EEF0FF;color:#4338CA;display:grid;place-items:center;flex:none}
+.actions{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:32px}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px}
+.slot{padding:16px;display:flex;flex-direction:column;gap:10px}
+.slottop{display:flex;align-items:center;gap:10px}
+.slotname{font-size:14px;font-weight:700;line-height:1.3}
+.file{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#F6F7FB;border-radius:10px;padding:9px 10px;font-size:12px}
+.ok{display:inline-flex;align-items:center;gap:5px;color:#047857;font-weight:700;font-size:12px}
+.progress{height:6px;background:#E4E7EF;border-radius:999px;overflow:hidden;margin-top:22px}
+.progress div{height:100%;background:#4338CA;border-radius:999px;transition:width .5s cubic-bezier(.22,1,.36,1)}
+.auditgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:24px;margin-top:24px}
+.paper{position:relative;overflow:hidden;background:#fff;border:1px solid #E4E7EF;border-radius:16px;padding:28px;min-height:300px}
+.paper .doctitle{font-size:24px}
+.scan{position:absolute;left:0;right:0;height:80px;background:linear-gradient(180deg,rgba(67,56,202,0),rgba(67,56,202,.16));border-bottom:2px solid #4338CA;animation:scan 1.7s linear infinite;pointer-events:none}
+@keyframes scan{from{top:-80px}to{top:100%}}
+.json{background:#0E1525;color:#C7CCDA;border-radius:16px;padding:18px 20px;font-size:13px;line-height:1.9;margin-top:16px;min-height:200px}
+.json .k{color:#A5B4FC}.json .v{color:#6EE7B7}
+.jline{animation:fadeUp .35s ease both}
+.checks{list-style:none;margin:0;padding:8px;display:flex;flex-direction:column}
+.check{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:12px;transition:background .3s}
+.check.running{background:#EEF0FF}
+.check.fail{background:#FFF1F2}
+.cicon{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;margin-top:1px}
+.ci-pass{background:#D1FAE5;color:#047857}.ci-fail{background:#FFE4E6;color:#BE123C}.ci-skip{background:#F1F2F6;color:#5B6478}.ci-pend{border:2px solid #D7DBE6;box-sizing:border-box}.ci-run{color:#4338CA}
+.clabel{font-size:14px;font-weight:700;line-height:1.35}
+.cdetail{font-size:13px;color:#5B6478;margin-top:2px}
+.ctag{font-size:11px;font-weight:700;color:#4338CA;background:#EEF0FF;border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:1px}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tick{stroke-dasharray:24;stroke-dashoffset:24;animation:draw .4s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.spin{animation:spin .8s linear infinite;transform-origin:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+.shake{animation:shake .4s ease 1}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.reportgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:24px;margin-top:28px;align-items:start}
+.ringcard{padding:28px;text-align:center}
+.ring{width:180px;height:180px;margin:0 auto;position:relative}
+.ring svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:#EEF0F5;stroke-width:12}
+.ring-fg{fill:none;stroke-width:12;stroke-linecap:round;stroke-dasharray:339.29;animation:ringIn 1.3s cubic-bezier(.22,1,.36,1) both}
+@keyframes ringIn{from{stroke-dashoffset:339.29}}
+.ringnum{position:absolute;inset:0;display:grid;place-items:center;font-size:44px;font-weight:800;letter-spacing:-.03em}
+.ringnum small{display:block;font-size:12px;font-weight:700;color:#5B6478;letter-spacing:.06em;text-transform:uppercase;margin-top:-6px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:22px}
+.stat{background:#F6F7FB;border-radius:12px;padding:12px 6px}
+.stat b{display:block;font-size:22px;font-weight:800}
+.stat span{font-size:12px;color:#5B6478;font-weight:600}
+.issues{display:flex;flex-direction:column;gap:14px;grid-column:span 2}
+.issue{overflow:hidden}
+.issue-head{width:100%;display:flex;align-items:center;gap:14px;background:none;border:0;padding:18px 20px;cursor:pointer;font:inherit;color:inherit;text-align:left}
+.sev{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#BE123C;background:#FFE4E6;border-radius:8px;padding:5px 9px;flex:none}
+.ititle{font-size:16px;font-weight:700;line-height:1.35}
+.idoc{font-size:13px;color:#5B6478;margin-top:2px}
+.chev{margin-left:auto;flex:none;color:#5B6478;transition:transform .25s}
+.chev.open{transform:rotate(180deg)}
+.ibody{padding:0 20px 20px;animation:fadeUp .3s ease both}
+.evidence{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px}
+.ev{border:1px solid #E4E7EF;border-radius:12px;padding:12px 14px}
+.ev.bad{border-color:#FECDD3;background:#FFF1F2}
+.ev.good{border-color:#A7F3D0;background:#ECFDF5}
+.evlabel{font-size:12px;font-weight:700;color:#5B6478;margin-bottom:4px}
+.evval{font-size:14px;font-weight:600;line-height:1.45}
+.why{font-size:14px;line-height:1.6;color:#3F4759;margin:16px 0 0}
+.fix{display:flex;gap:10px;align-items:flex-start;background:#EEF0FF;border-radius:12px;padding:12px 14px;margin-top:12px;font-size:14px;line-height:1.6;color:#1E1B4B}
+.src{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-top:12px}
+.ainote{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#3730A3;margin-top:10px}
+.mini{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.mini li{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600}
+.skipnote{margin-top:16px;border:1px dashed #B9BFD0;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.55;color:#3F4759;text-align:left}
+.ready{max-width:720px;margin:0 auto;text-align:center;padding:40px 32px}
+.confetti{position:relative;height:0}
+.confetti i{position:absolute;width:8px;height:14px;border-radius:2px;top:0;left:50%;animation:pop 1.1s cubic-bezier(.22,1,.36,1) both}
+@keyframes pop{from{transform:translate(0,0) rotate(0);opacity:1}to{transform:translate(var(--x),var(--y)) rotate(260deg);opacity:0}}
+.disclaimer{font-size:13px;color:#5B6478;margin:22px 0 0;line-height:1.6}
+@media (max-width:700px){.how{grid-template-columns:1fr}.issues{grid-column:auto}.stack{height:420px}.doc{width:250px}.doc-front{width:270px;left:8%}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition:none!important}.scan{display:none}}
+</style>
+</helmet>
+<div class="fs">
+<header class="top">
+<div class="wrap topin">
+<button class="brand" onClick="{{goLanding}}" aria-label="FormSure, back to start">
+<span class="logo"><svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M9 12l2 2 4-4"></path><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"></path></svg></span>
+FormSure
+</button>
+<sc-if value="{{showSteps}}" hint-placeholder-val="{{ false }}">
+<nav class="steps" aria-label="Progress">
+<sc-for list="{{steps}}" as="item" hint-placeholder-count="4">
+<div class="step {{item.cls}}"><span class="stepnum">{{item.num}}</span>{{item.label}}</div>
+</sc-for>
+</nav>
+</sc-if>
+<div class="langs" role="group" aria-label="Language for fixes">
+<sc-for list="{{langs}}" as="item" hint-placeholder-count="3">
+<button class="lang {{item.cls}}" onClick="{{item.pick}}" aria-pressed="{{item.pressed}}" lang="{{item.code}}">{{item.label}}</button>
+</sc-for>
+</div>
+</div>
+</header>
+
+<sc-if value="{{isLanding}}" hint-placeholder-val="{{ true }}">
+<main class="wrap hero">
+<div class="enter">
+<p class="eyebrow"><svg width="14" height="14" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M22 10L12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c3 2 9 2 12 0v-5"></path></svg>For MahaDBT scholarship applicants</p>
+<h1 class="h1">Check before<br>you submit.</h1>
+<p class="lead">FormSure reads your documents, checks them against your scheme’s rules, and shows exactly what to fix, before your application gets sent back.</p>
+<div class="row">
+<button class="btn btn-primary" onClick="{{trySample}}">Try sample applicant<svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+<button class="btn btn-ghost" onClick="{{goScheme}}">Start my check</button>
+</div>
+<ol class="how">
+<li><span class="hownum">01</span>Upload your documents</li>
+<li><span class="hownum">02</span>AI reads, rules check</li>
+<li><span class="hownum">03</span>Fix before you submit</li>
+</ol>
+<p class="trust"><svg width="16" height="16" viewBox="0 0 24 24" class="ic" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 018 0v4"></path></svg>Nothing is stored. Every rule links to its official source.</p>
+</div>
+<div class="stack" aria-hidden="true">
+<div class="doc doc-back">
+<div class="docbar"><span class="docsample">SAMPLE</span></div>
+<p class="doctitle">Marksheet</p>
+<div class="docline w90"></div><div class="docline w60"></div><div class="docline w80"></div><div class="docline w40"></div>
+<p class="docfield">Name: <span class="hl">Arav Sunil Patil</span></p>
+</div>
+<div class="doc doc-mid">
+<div class="docbar"><span class="docsample">SAMPLE</span></div>
+<p class="doctitle dev" lang="mr">आधार कार्ड</p>
+<div class="docline w80"></div><div class="docline w60"></div>
+<p class="docfield mono">XXXX XXXX 4417</p>
+</div>
+<div class="float" style="position: absolute; inset: 0">
+<div class="doc doc-front">
+<div class="docbar"><span class="docsample dev" lang="mr">नमुना · SAMPLE</span></div>
+<p class="doctitle dev" lang="mr">उत्पन्न प्रमाणपत्र</p>
+<div class="docline w90"></div><div class="docline w80"></div><div class="docline w60"></div>
+<p class="docfield dev" lang="mr">नाव: <span class="hl">आरव सुनील पाटील</span></p>
+<p class="docfield dev" lang="mr">दिनांक: १२/०५/२०२५</p>
+<div class="flag"><span class="flag-bad">Certificate from last financial year</span><span class="flag-good">Fixed · ready to submit</span></div>
+</div>
+</div>
+<div class="chipfloat"><small>AI name match</small><span class="dev" lang="mr">आरव</span> → Aarav ≠ Arav</div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{isScheme}}" hint-placeholder-val="{{ false }}">
+<main class="wrap page enter">
+<h2 class="h2">Which scholarship are you applying for?</h2>
+<p class="sub">FormSure loads that scheme’s rules. MahaDBT is the first scheme pack; new forms are added as new packs.</p>
+<div class="schemes">
+<sc-for list="{{schemes}}" as="item" hint-placeholder-count="4">
+<button class="scheme stagger {{item.cls}}" style="animation-delay: {{item.delay}}" onClick="{{item.pick}}" aria-pressed="{{item.pressed}}" aria-disabled="{{item.off}}">
+<span class="sname">{{item.name}}</span>
+<span class="sportal">{{item.portal}}</span>
+<span class="pill {{item.pillCls}}">{{item.pill}}</span>
+</button>
+</sc-for>
+</div>
+<div class="grid2">
+<section class="card panel" aria-labelledby="app-details">
+<p class="ptitle" id="app-details">Application details</p>
+<p class="pdesc">Use exactly what you entered on MahaDBT.</p>
+<div class="field"><label for="cat">Category</label><select id="cat"><option>OBC</option><option>SBC</option><option>VJNT</option></select></div>
+<div class="field"><label for="yr">Academic year</label><select id="yr"><option>2026-27</option><option>2025-26</option></select></div>
+<div class="field"><label for="typ">Application type</label><select id="typ"><option>Fresh</option><option>Renewal</option></select></div>
+</section>
+<section class="card panel" aria-labelledby="req-docs">
+<p class="ptitle" id="req-docs">Documents this scheme needs</p>
+<p class="pdesc">7 documents for Post-Matric Scholarship (OBC)</p>
+<ul class="doclist">
+<sc-for list="{{docs}}" as="item" hint-placeholder-count="7">
+<li class="stagger" style="animation-delay: {{item.delay}}"><span class="dicon"><svg width="16" height="16" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"></path><path d="M14 3v5h5"></path></svg></span><span>{{item.name}}<span class="mr dev" lang="mr">{{item.mr}}</span></span></li>
+</sc-for>
+</ul>
+</section>
+</div>
+<div class="actions">
+<button class="btn btn-ghost" onClick="{{goLanding}}">Back</button>
+<button class="btn btn-primary" onClick="{{goUpload}}">Continue to upload<svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{isUpload}}" hint-placeholder-val="{{ false }}">
+<main class="wrap page enter">
+<h2 class="h2">Upload your documents</h2>
+<p class="sub">One file per slot, exactly as you will upload it on MahaDBT. Sample applicant: Aarav Patil.</p>
+<div class="grid2" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr))">
+<div class="slots" style="grid-column: span 2">
+<sc-for list="{{docs}}" as="item" hint-placeholder-count="7">
+<div class="card slot stagger" style="animation-delay: {{item.delay}}">
+<div class="slottop"><span class="dicon"><svg width="16" height="16" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"></path><path d="M14 3v5h5"></path></svg></span><div><div class="slotname">{{item.name}}</div><div class="mr dev" lang="mr" style="font-size: 12px; color: #5B6478">{{item.mr}}</div></div></div>
+<div class="file"><span class="mono">{{item.file}}</span><span>{{item.size}}</span></div>
+<span class="ok"><svg width="14" height="14" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path class="tick" d="M5 12l5 5 9-10"></path></svg>Uploaded</span>
+</div>
+</sc-for>
+</div>
+<section class="card panel" aria-labelledby="as-entered">
+<p class="ptitle" id="as-entered">As entered on MahaDBT</p>
+<p class="pdesc">FormSure compares these with every document.</p>
+<div class="field"><label for="nm">Full name</label><input id="nm" value="Aarav Sunil Patil" readonly></div>
+<div class="field"><label for="dob">Date of birth</label><input id="dob" value="14/03/2006" readonly></div>
+<div class="field"><label for="cg">Category</label><input id="cg" value="OBC" readonly></div>
+</section>
+</div>
+<div class="actions">
+<button class="btn btn-ghost" onClick="{{goScheme}}">Back</button>
+<button class="btn btn-primary" onClick="{{runAudit}}">Run FormSure check<svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{isAudit}}" hint-placeholder-val="{{ false }}">
+<main class="wrap page enter">
+<div class="row" style="justify-content: space-between">
+<div>
+<h2 class="h2">Checking Aarav’s application</h2>
+<p class="sub">Gemini reads each document. Then plain rules decide pass or fail.</p>
+</div>
+<sc-if value="{{auditRunning}}" hint-placeholder-val="{{ true }}"><button class="btn btn-ghost" onClick="{{skipAudit}}">Skip animation</button></sc-if>
+<sc-if value="{{auditDone}}" hint-placeholder-val="{{ false }}"><button class="btn btn-primary enter" onClick="{{goReport}}">See readiness report<svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button></sc-if>
+</div>
+<div class="progress" role="progressbar" aria-label="Checks completed" aria-valuemin="0" aria-valuemax="8" aria-valuenow="{{auditCount}}"><div style="width: {{auditPct}}"></div></div>
+<div class="auditgrid">
+<div>
+<div class="paper">
+<sc-if value="{{auditRunning}}" hint-placeholder-val="{{ true }}"><div class="scan"></div></sc-if>
+<div class="docbar"><span class="docsample dev" lang="mr">नमुना · SAMPLE</span><span class="mono" style="font-size: 12px; color: #5B6478">aarav_income.pdf · 1 page</span></div>
+<p class="doctitle dev" lang="mr">उत्पन्न प्रमाणपत्र</p>
+<div class="docline w90"></div><div class="docline w80"></div>
+<p class="docfield dev" lang="mr">अर्जदाराचे नाव: <span class="hl">आरव सुनील पाटील</span></p>
+<p class="docfield dev" lang="mr">दिनांक: <span class="hl">१२/०५/२०२५</span></p>
+<p class="docfield dev" lang="mr">तहसीलदार, हवेली</p>
+<div class="docline w60" style="margin-top: 16px"></div><div class="docline w40"></div>
+</div>
+<div class="json mono" aria-live="polite">
+<div style="color: #5B6478">// extracted by Gemini</div>
+<sc-for list="{{jsonLines}}" as="item" hint-placeholder-count="3">
+<div class="jline"><span class="k">{{item.k}}</span>: <span class="v">{{item.v}}</span></div>
+</sc-for>
+</div>
+</div>
+<section class="card" aria-label="Checks" aria-live="polite">
+<ul class="checks">
+<sc-for list="{{checks}}" as="item" hint-placeholder-count="8">
+<li class="check {{item.cls}}">
+<sc-if value="{{item.isPass}}" hint-placeholder-val="{{ false }}"><span class="cicon ci-pass"><svg width="14" height="14" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path class="tick" d="M5 12l5 5 9-10"></path></svg></span></sc-if>
+<sc-if value="{{item.isFail}}" hint-placeholder-val="{{ false }}"><span class="cicon ci-fail shake"><svg width="14" height="14" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg></span></sc-if>
+<sc-if value="{{item.isSkip}}" hint-placeholder-val="{{ false }}"><span class="cicon ci-skip"><svg width="14" height="14" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M7 12h10"></path></svg></span></sc-if>
+<sc-if value="{{item.isRunning}}" hint-placeholder-val="{{ false }}"><span class="cicon ci-run"><svg width="22" height="22" viewBox="0 0 24 24" class="ic spin" aria-hidden="true"><path d="M12 3a9 9 0 019 9"></path></svg></span></sc-if>
+<sc-if value="{{item.isPending}}" hint-placeholder-val="{{ true }}"><span class="cicon ci-pend"></span></sc-if>
+<div><div class="clabel">{{item.label}}<sc-if value="{{item.ai}}" hint-placeholder-val="{{ false }}"><span class="ctag">AI</span></sc-if></div><div class="cdetail">{{item.detail}}</div></div>
+</li>
+</sc-for>
+</ul>
+</section>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{isReport}}" hint-placeholder-val="{{ false }}">
+<main class="wrap page enter">
+<h2 class="h2">3 things to fix before you submit</h2>
+<p class="sub">Each issue shows what FormSure found, why it matters, and how to fix it. Fixes are shown in {{langName}}.</p>
+<div class="reportgrid">
+<div style="display: flex; flex-direction: column; gap: 24px">
+<section class="card ringcard" aria-label="Readiness score">
+<div class="ring">
+<svg width="180" height="180" viewBox="0 0 132 132" aria-hidden="true"><circle class="ring-bg" cx="66" cy="66" r="54"></circle><circle class="ring-fg" cx="66" cy="66" r="54" style="stroke: #D97706; stroke-dashoffset: 145.9"></circle></svg>
+<div class="ringnum"><div>{{count}}%<small>Ready</small></div></div>
+</div>
+<div class="stats">
+<div class="stat"><b style="color: #047857">4</b><span>Passed</span></div>
+<div class="stat"><b style="color: #BE123C">3</b><span>To fix</span></div>
+<div class="stat"><b style="color: #5B6478">1</b><span>Skipped</span></div>
+</div>
+<div class="skipnote"><b>Skipped: family income limit.</b> Sources disagree on this scheme’s limit, so the rule isn’t verified yet. FormSure never applies an unverified rule.</div>
+</section>
+<section class="card panel" aria-labelledby="passed-h">
+<p class="ptitle" id="passed-h">Passed checks</p>
+<ul class="mini" style="margin-top: 12px">
+<sc-for list="{{passed}}" as="item" hint-placeholder-count="4">
+<li><span class="cicon ci-pass" style="width: 22px; height: 22px"><svg width="12" height="12" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>{{item.label}}</li>
+</sc-for>
+</ul>
+</section>
+</div>
+<div class="issues">
+<sc-for list="{{issues}}" as="item" hint-placeholder-count="3">
+<article class="card issue stagger" style="animation-delay: {{item.delay}}">
+<button class="issue-head" onClick="{{item.toggle}}" aria-expanded="{{item.open}}">
+<span class="sev"><svg width="14" height="14" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"></path></svg>Critical</span>
+<span><span class="ititle" style="display: block">{{item.title}}</span><span class="idoc" style="display: block">{{item.doc}}</span></span>
+<svg width="20" height="20" viewBox="0 0 24 24" class="ic chev {{item.chevCls}}" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<sc-if value="{{item.open}}" hint-placeholder-val="{{ false }}">
+<div class="ibody">
+<div class="evidence">
+<div class="ev bad"><div class="evlabel">{{item.foundLabel}}</div><div class="evval">{{item.found}}</div></div>
+<div class="ev {{item.neededCls}}"><div class="evlabel">{{item.neededLabel}}</div><div class="evval">{{item.needed}}</div></div>
+</div>
+<sc-if value="{{item.ai}}" hint-placeholder-val="{{ false }}"><span class="ainote"><svg width="14" height="14" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"></path></svg>Matched by Gemini across Marathi and English</span></sc-if>
+<p class="why"><b>Why it matters.</b> {{item.why}}</p>
+<div class="fix" lang="{{langCode}}"><svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true" style="flex: none; margin-top: 3px; color: #4338CA"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"></path></svg><span class="{{fixCls}}">{{item.fix}}</span></div>
+<a class="src" href="{{item.url}}" target="_blank" rel="noopener">Source: {{item.source}}<svg width="14" height="14" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"></path></svg></a>
+</div>
+</sc-if>
+</article>
+</sc-for>
+<div class="actions" style="margin-top: 8px">
+<button class="btn btn-ghost" onClick="{{goUpload}}">Re-upload documents</button>
+<button class="btn btn-primary" onClick="{{fixAll}}">I’ve fixed these, re-check<svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M20 12a8 8 0 11-2.3-5.7M20 4v4h-4"></path></svg></button>
+</div>
+</div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{isReady}}" hint-placeholder-val="{{ false }}">
+<main class="wrap page enter">
+<section class="card ready" aria-labelledby="ready-h">
+<div class="confetti" aria-hidden="true">
+<sc-for list="{{confetti}}" as="item" hint-placeholder-count="12"><i style="--x: {{item.x}}; --y: {{item.y}}; background: {{item.c}}; animation-delay: {{item.d}}"></i></sc-for>
+</div>
+<div class="ring">
+<svg width="180" height="180" viewBox="0 0 132 132" aria-hidden="true"><circle class="ring-bg" cx="66" cy="66" r="54"></circle><circle class="ring-fg" cx="66" cy="66" r="54" style="stroke: #059669; stroke-dashoffset: 0"></circle></svg>
+<div class="ringnum"><div>{{count}}%<small>Ready</small></div></div>
+</div>
+<h2 class="h2" id="ready-h" style="margin-top: 24px">Ready to submit</h2>
+<p class="sub" style="margin: 10px auto 0">All 7 verified checks passed. 1 rule was skipped because it isn’t verified yet.</p>
+<div class="row" style="justify-content: center; margin-top: 28px">
+<button class="btn btn-green"><svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>Download checklist for college desk</button>
+<a class="btn btn-ghost" href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=MahaDBT%20scholarship%20deadline" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" class="ic" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 11h18"></path></svg>Add deadline to Google Calendar</a>
+</div>
+<p class="disclaimer">FormSure flags likely problems before you submit. Final approval is always decided by MahaDBT and your college.</p>
+<button class="btn btn-ghost" style="margin-top: 18px" onClick="{{restart}}">Check another application</button>
+</section>
+</main>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { screen: 'landing', lang: 'en', auditStep: 0, count: 0, open: 'fy' };
+  }
+  componentWillUnmount() { this.clearTimers(); }
+  clearTimers() { clearInterval(this.t); clearInterval(this.c); }
+  go(screen) { this.clearTimers(); this.setState({ screen: screen }); }
+  checkData() {
+    return [
+      { label: 'Required documents present', detail: 'All 7 documents uploaded', result: 'pass', ai: false },
+      { label: 'Right document in each slot', detail: 'Each file matches its slot', result: 'pass', ai: true },
+      { label: 'Income certificate from this financial year', detail: 'Issued 12 May 2025, FY 2025-26', result: 'fail', ai: false },
+      { label: 'Income + non-creamy layer in one PDF', detail: '1 page found, NCL page missing', result: 'fail', ai: true },
+      { label: 'Name matches across documents', detail: 'Marksheet says Arav, not Aarav', result: 'fail', ai: true },
+      { label: 'Date of birth matches Aadhaar', detail: '14 Mar 2006 on both', result: 'pass', ai: false },
+      { label: 'Category matches caste certificate', detail: 'OBC on both', result: 'pass', ai: false },
+      { label: 'Family income within scheme limit', detail: 'Rule not verified yet, skipped', result: 'skip', ai: false }
+    ];
+  }
+  runAudit() {
+    this.clearTimers();
+    var total = this.checkData().length;
+    this.setState({ screen: 'audit', auditStep: 0 });
+    this.t = setInterval(() => {
+      var n = this.state.auditStep + 1;
+      this.setState({ auditStep: n });
+      if (n >= total) clearInterval(this.t);
+    }, 650);
+  }
+  countTo(screen, target) {
+    this.clearTimers();
+    this.setState({ screen: screen, count: 0 });
+    var step = Math.max(1, Math.round(target / 45));
+    this.c = setInterval(() => {
+      var n = Math.min(target, this.state.count + step);
+      this.setState({ count: n });
+      if (n >= target) clearInterval(this.c);
+    }, 20);
+  }
+  renderVals() {
+    var s = this.state;
+    var self = this;
+    var lang = s.lang;
+    var screens = ['landing', 'scheme', 'upload', 'audit', 'report', 'ready'];
+    var stepIndex = { scheme: 1, upload: 2, audit: 3, report: 4, ready: 4 }[s.screen] || 0;
+    var steps = ['Scheme', 'Upload', 'Check', 'Report'].map(function (label, i) {
+      var n = i + 1;
+      return { label: label, num: n < stepIndex ? '✓' : String(n), cls: n === stepIndex ? 'on' : (n < stepIndex ? 'done' : '') };
+    });
+    var langDefs = [{ code: 'en', label: 'EN', name: 'English' }, { code: 'mr', label: 'मराठी', name: 'Marathi' }, { code: 'hi', label: 'हिंदी', name: 'Hindi' }];
+    var langs = langDefs.map(function (l) {
+      return { code: l.code, label: l.label, cls: l.code === lang ? 'on' : '', pressed: l.code === lang, pick: function () { self.setState({ lang: l.code }); } };
+    });
+    var langName = langDefs.filter(function (l) { return l.code === lang; })[0].name;
+    var schemeDefs = [
+      { name: 'Post-Matric Scholarship for OBC students', portal: 'MahaDBT · VJNT, OBC & SBC Welfare', pill: 'Scheme pack ready', on: true },
+      { name: 'Post-Matric Scholarship for VJNT students', portal: 'MahaDBT', pill: 'Coming soon', on: false },
+      { name: 'Tuition and exam fees (Freeship)', portal: 'MahaDBT', pill: 'Coming soon', on: false },
+      { name: 'Add a new scheme', portal: 'Pack builder: AI drafts rules from official guidelines, you verify', pill: 'Pack builder', on: false }
+    ];
+    var schemes = schemeDefs.map(function (d, i) {
+      return { name: d.name, portal: d.portal, pill: d.pill, pillCls: d.on ? 'pill-on' : 'pill-off', cls: d.on ? 'sel' : 'off', pressed: d.on, off: !d.on, delay: (i * 70) + 'ms', pick: function () {} };
+    });
+    var docDefs = [
+      ['Aadhaar card', 'आधार कार्ड', 'aarav_aadhaar.pdf', '92 KB'],
+      ['OBC caste certificate', 'जात प्रमाणपत्र', 'aarav_caste.pdf', '148 KB'],
+      ['Income certificate + non-creamy layer (one PDF)', 'उत्पन्न व नॉन-क्रिमीलेयर प्रमाणपत्र', 'aarav_income.pdf', '1 page · 121 KB'],
+      ['Domicile certificate', 'अधिवास प्रमाणपत्र', 'aarav_domicile.pdf', '110 KB'],
+      ['College bonafide and fee structure', 'बोनाफाईड व फी रचना', 'aarav_bonafide.pdf', '87 KB'],
+      ['Previous year marksheet', 'मागील वर्षाची गुणपत्रिका', 'aarav_marksheet.pdf', '176 KB'],
+      ['Aadhaar-seeded bank passbook', 'आधार संलग्न बँक पासबुक', 'aarav_passbook.pdf', '64 KB']
+    ];
+    var docs = docDefs.map(function (d, i) { return { name: d[0], mr: d[1], file: d[2], size: d[3], delay: (120 + i * 60) + 'ms' }; });
+    var data = this.checkData();
+    var total = data.length;
+    var checks = data.map(function (c, i) {
+      var st = s.auditStep > i ? c.result : (s.auditStep === i ? 'running' : 'pending');
+      return { label: c.label, detail: st === 'pending' ? 'Waiting' : (st === 'running' ? 'Checking…' : c.detail), ai: c.ai,
+        isPass: st === 'pass', isFail: st === 'fail', isSkip: st === 'skip', isRunning: st === 'running', isPending: st === 'pending',
+        cls: st === 'running' ? 'running' : (st === 'fail' ? 'fail' : '') };
+    });
+    var jsonAll = [
+      ['documentType', '"income_certificate"'], ['language', '"mr"'], ['applicantName.original', '"आरव सुनील पाटील"'],
+      ['applicantName.english', '"Aarav Sunil Patil"'], ['issueDate', '"2025-05-12"'], ['issuingAuthority', '"Tehsildar, Haveli"'],
+      ['pageCount', '1'], ['legible', 'true']
+    ];
+    var jsonLines = jsonAll.slice(0, Math.min(jsonAll.length, s.auditStep + 1)).map(function (p) { return { k: p[0], v: p[1] }; });
+    var issueDefs = [
+      { id: 'fy', title: 'Income certificate is from last financial year', doc: 'Income certificate',
+        foundLabel: 'Found on certificate', found: 'Issued 12/05/2025 (FY 2025-26)', neededLabel: 'Needed', needed: 'Issued in FY 2026-27, on or after 1 April 2026', ai: false,
+        why: 'MahaDBT rejects income certificates issued in an earlier financial year.',
+        fix: { en: 'Get a new income certificate from the Tehsildar office, issued on or after 1 April 2026.', mr: 'तहसील कार्यालयातून १ एप्रिल २०२६ रोजी किंवा त्यानंतर दिलेले नवीन उत्पन्न प्रमाणपत्र मिळवा.', hi: 'तहसील कार्यालय से 1 अप्रैल 2026 को या उसके बाद जारी नया आय प्रमाणपत्र लें।' },
+        source: 'MahaDBT 2.0 guide', url: 'https://anantamias.com/mahadbt/' },
+      { id: 'ncl', title: 'Non-creamy layer certificate is missing from the PDF', doc: 'Income certificate + non-creamy layer',
+        foundLabel: 'Found in file', found: '1 page: income certificate only', neededLabel: 'Needed', needed: 'Income and non-creamy layer certificates merged in one PDF', ai: true,
+        why: 'OBC, SBC and VJNT applicants upload both certificates together in the income certificate slot.',
+        fix: { en: 'Merge your income certificate and non-creamy layer certificate into one PDF, then upload it in the income certificate slot.', mr: 'उत्पन्न प्रमाणपत्र आणि नॉन-क्रिमीलेयर प्रमाणपत्र एकाच PDF मध्ये जोडा आणि उत्पन्न प्रमाणपत्राच्या जागी अपलोड करा.', hi: 'आय प्रमाणपत्र और नॉन-क्रीमी लेयर प्रमाणपत्र को एक ही PDF में जोड़ें और आय प्रमाणपत्र वाली जगह अपलोड करें।' },
+        source: 'College scholarship notice', url: 'https://vazecollege.net/wp-content/uploads/2026/02/Notice-for-Reserve-Caste-Cetogary-Students-SFC-for-2025-26.pdf' },
+      { id: 'name', title: 'Your name is spelled differently on two documents', doc: 'Income certificate · Marksheet',
+        foundLabel: 'Marksheet', found: 'Arav Sunil Patil', neededLabel: 'Income certificate (Marathi) and form', needed: 'आरव सुनील पाटील → Aarav Sunil Patil', ai: true,
+        why: 'Name spelling and order must match across the form and every document.',
+        fix: { en: 'Check which spelling matches your Aadhaar, then get the other document corrected before you submit. Ask your college scholarship desk how.', mr: 'तुमच्या आधारवरील स्पेलिंग तपासा आणि सबमिट करण्यापूर्वी दुसरे कागदपत्र दुरुस्त करून घ्या. कसे करायचे ते महाविद्यालयाच्या शिष्यवृत्ती विभागाला विचारा.', hi: 'आधार पर लिखी स्पेलिंग जांचें और जमा करने से पहले दूसरा दस्तावेज़ ठीक करवाएं। तरीका कॉलेज के छात्रवृत्ति विभाग से पूछें।' },
+        source: 'MahaDBT verification steps, CareerIndia', url: 'https://www.careerindia.com/news/mahadbt-1-0-portal-closing-today-urgent-scholarship-verification-steps-2026-011-65787.html' }
+    ];
+    var issues = issueDefs.map(function (d, i) {
+      var open = s.open === d.id;
+      return { title: d.title, doc: d.doc, foundLabel: d.foundLabel, found: d.found, neededLabel: d.neededLabel, needed: d.needed, neededCls: 'good', ai: d.ai,
+        why: d.why, fix: d.fix[lang], source: d.source, url: d.url, open: open, chevCls: open ? 'open' : '', delay: (200 + i * 120) + 'ms',
+        toggle: function () { self.setState({ open: open ? '' : d.id }); } };
+    });
+    var passed = data.filter(function (c) { return c.result === 'pass'; }).map(function (c) { return { label: c.label }; });
+    var colors = ['#4338CA', '#059669', '#D97706', '#E11D48', '#A5B4FC', '#6EE7B7'];
+    var confetti = [];
+    for (var k = 0; k < 14; k++) {
+      var ang = (k / 14) * Math.PI * 2;
+      confetti.push({ x: Math.round(Math.cos(ang) * 240) + 'px', y: Math.round(Math.sin(ang) * 140 + 60) + 'px', c: colors[k % colors.length], d: (k * 25) + 'ms' });
+    }
+    return {
+      isLanding: s.screen === 'landing', isScheme: s.screen === 'scheme', isUpload: s.screen === 'upload',
+      isAudit: s.screen === 'audit', isReport: s.screen === 'report', isReady: s.screen === 'ready',
+      showSteps: s.screen !== 'landing', steps: steps, langs: langs, langCode: lang, langName: langName,
+      fixCls: lang === 'en' ? '' : 'dev',
+      schemes: schemes, docs: docs, checks: checks, jsonLines: jsonLines,
+      auditCount: Math.min(s.auditStep, total), auditPct: Math.round(Math.min(s.auditStep, total) / total * 100) + '%',
+      auditDone: s.auditStep >= total, auditRunning: s.auditStep < total,
+      issues: issues, passed: passed, count: s.count, confetti: confetti,
+      goLanding: function () { self.go('landing'); },
+      goScheme: function () { self.go('scheme'); },
+      trySample: function () { self.go('scheme'); },
+      goUpload: function () { self.go('upload'); },
+      runAudit: function () { self.runAudit(); },
+      skipAudit: function () { self.clearTimers(); self.setState({ auditStep: total }); },
+      goReport: function () { self.setState({ open: 'fy' }); self.countTo('report', 57); },
+      fixAll: function () { self.countTo('ready', 100); },
+      restart: function () { self.setState({ auditStep: 0, count: 0, open: 'fy' }); self.go('landing'); }
+    };
+  }
+}
+</script>
+</body>
+</html>

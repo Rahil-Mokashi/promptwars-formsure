@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+functions/lib
+functions/web
+.env
+.env.local
+.env.*
+!.env.example
+.firebase
+*.log
