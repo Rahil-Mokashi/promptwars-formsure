@@ -97,9 +97,9 @@ export function App() {
     go('landing');
   };
 
-  const income = docs.income_certificate;
-  const incomeFile = sample ? sample.files.income_certificate.name : files.income_certificate?.name ?? 'income certificate';
-  const fileLabel = `${incomeFile}${income ? ` · ${income.pageCount} ${income.pageCount === 1 ? 'page' : 'pages'}` : ''}`;
+  const fileNames: Partial<Record<SlotId, string>> = sample
+    ? Object.fromEntries(Object.entries(sample.files).map(([k, v]) => [k, v.name]))
+    : Object.fromEntries(Object.entries(files).map(([k, v]) => [k, v.name]));
 
   let body: ReactNode;
   switch (screen) {
@@ -129,9 +129,11 @@ export function App() {
       body = (
         <Audit
           key={runId}
+          pack={pack}
           report={report}
-          income={income}
-          fileLabel={fileLabel}
+          docs={docs}
+          fileNames={fileNames}
+          sample={!!sample}
           firstName={form.fullName.trim().split(/\s+/)[0] ?? ''}
           onReport={() => go(report && report.failed === 0 ? 'ready' : 'report')}
         />
@@ -139,7 +141,7 @@ export function App() {
       break;
     case 'report':
       body = report && (
-        <Report report={report} lang={lang} canRecheck={!!sample} onReupload={() => go('upload')} onRecheck={recheck} />
+        <Report pack={pack} docs={docs} report={report} lang={lang} canRecheck={!!sample} onReupload={() => go('upload')} onRecheck={recheck} />
       );
       break;
     case 'ready':

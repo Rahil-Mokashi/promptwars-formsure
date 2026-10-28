@@ -25,7 +25,7 @@ export function Header({ screen, lang, onLang, onHome }: Props) {
       <div className="wrap topin">
         <button className="brand" onClick={onHome} aria-label="FormSure, back to start">
           <span className="logo"><ShieldIcon /></span>
-          FormSure
+          <span className="brandname">FormSure</span>
         </button>
         {screen !== 'landing' && (
           <nav className="steps" aria-label="Progress">
@@ -33,9 +33,9 @@ export function Header({ screen, lang, onLang, onHome }: Props) {
               const n = i + 1;
               const cls = n === current ? 'on' : n < current ? 'done' : '';
               return (
-                <div key={label} className={`step ${cls}`} aria-current={n === current ? 'step' : undefined}>
+                <div key={label} className={`step ${cls}`} aria-current={n === current ? 'step' : undefined} aria-label={`Step ${n}: ${label}`}>
                   <span className="stepnum">{n < current ? '✓' : n}</span>
-                  {label}
+                  <span className="steplabel">{label}</span>
                 </div>
               );
             })}

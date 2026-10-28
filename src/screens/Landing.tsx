@@ -16,9 +16,25 @@ export function Landing({ error, onSample, onStart }: Props) {
     reduce
       ? { style: { opacity: bad ? 1 : 0 } }
       : { animate: { opacity: values }, transition: { duration: 5, times, repeat: Infinity, ease: 'easeInOut' as const } };
+  // Gentle hover tilt for the document cards (rotation is driven by Framer Motion, not CSS).
+  const tilt = (rotate: number) =>
+    reduce
+      ? { style: { rotate } }
+      : {
+          style: { rotate, transformPerspective: 900 },
+          whileHover: { rotate: rotate * 0.5, rotateX: 7, rotateY: -7, scale: 1.03 },
+          transition: { type: 'spring' as const, stiffness: 260, damping: 18 },
+        };
+  const blob = (x: number[], y: number[], duration: number) =>
+    reduce ? {} : { animate: { x, y }, transition: { duration, repeat: Infinity, repeatType: 'mirror' as const, ease: 'easeInOut' as const } };
 
   return (
     <main className="wrap hero">
+      <div className="aurora" aria-hidden="true">
+        <motion.i className="a1" {...blob([0, 80, -20], [0, 40, 10], 14)} />
+        <motion.i className="a2" {...blob([0, -70, 20], [0, 60, -10], 17)} />
+        <motion.i className="a3" {...blob([0, 50, -40], [0, -30, 20], 19)} />
+      </div>
       <motion.div {...fadeUp(reduce, 0, 0.5)}>
         <p className="eyebrow"><CapIcon size={14} />For MahaDBT scholarship applicants</p>
         <h1 className="h1">Check before<br />you submit.</h1>
@@ -30,6 +46,11 @@ export function Landing({ error, onSample, onStart }: Props) {
           <button className="btn btn-ghost" onClick={onStart}>Start my check</button>
         </div>
         {error && <p className="errnote" role="alert">{error}</p>}
+        <ul className="statstrip" aria-label="FormSure at a glance">
+          <li>8 checks</li>
+          <li>3 languages</li>
+          <li>0 files stored</li>
+        </ul>
         <ol className="how">
           <li><span className="hownum">01</span>Upload your documents</li>
           <li><span className="hownum">02</span>AI reads, rules check</li>
@@ -39,20 +60,20 @@ export function Landing({ error, onSample, onStart }: Props) {
       </motion.div>
 
       <div className="stack" aria-hidden="true">
-        <div className="doc doc-back">
+        <motion.div className="doc doc-back" {...tilt(-8)}>
           <div className="docbar"><span className="docsample">SAMPLE</span></div>
           <p className="doctitle">Marksheet</p>
           <div className="docline w90" /><div className="docline w60" /><div className="docline w80" /><div className="docline w40" />
           <p className="docfield">Name: <span className="hl">Arav Sunil Patil</span></p>
-        </div>
-        <div className="doc doc-mid">
+        </motion.div>
+        <motion.div className="doc doc-mid" {...tilt(6)}>
           <div className="docbar"><span className="docsample">SAMPLE</span></div>
           <p className="doctitle dev" lang="mr">आधार कार्ड</p>
           <div className="docline w80" /><div className="docline w60" />
           <p className="docfield mono">XXXX XXXX 4417</p>
-        </div>
-        <motion.div style={{ position: 'absolute', inset: 0 }} {...float(6)}>
-          <div className="doc doc-front">
+        </motion.div>
+        <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} {...float(6)}>
+          <motion.div className="doc doc-front" style={{ pointerEvents: 'auto' }} {...(reduce ? {} : { whileHover: { rotateX: 6, rotateY: -6, scale: 1.03 }, transition: { type: 'spring', stiffness: 260, damping: 18 } })}>
             <div className="docbar"><span className="docsample dev" lang="mr">नमुना · SAMPLE</span></div>
             <p className="doctitle dev" lang="mr">उत्पन्न प्रमाणपत्र</p>
             <div className="docline w90" /><div className="docline w80" /><div className="docline w60" />
@@ -62,7 +83,7 @@ export function Landing({ error, onSample, onStart }: Props) {
               <motion.span className="flag-bad" {...flag([0, 0.42, 0.5, 0.92, 1], [1, 1, 0, 0, 1], true)}>Certificate from last financial year</motion.span>
               <motion.span className="flag-good" {...flag([0, 0.42, 0.5, 0.92, 1], [0, 0, 1, 1, 0], false)}>Fixed · ready to submit</motion.span>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
         <motion.div className="chipfloat" {...float(7, -2)}>
           <small>AI name match</small><span className="dev" lang="mr">आरव</span> → Aarav ≠ Arav

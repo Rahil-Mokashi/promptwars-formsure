@@ -1,12 +1,85 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
-import type { AuditReport, Check, Lang } from '../core/types';
+import type { AuditReport, Check, DocumentsBySlot, ExtractedDocument, Lang, SchemePack, SlotDef } from '../core/types';
 import { ChevronIcon, ExternalIcon, RefreshIcon, SparkIcon, Tick, WarnIcon, WrenchIcon } from '../icons';
 import { fadeUp, useReduce } from '../motion';
 import { LANGS } from './Header';
 import { Ring } from './Ring';
 
+interface Row {
+  label: string;
+  value: string;
+  hl?: boolean;
+}
+interface Preview {
+  slot: SlotDef;
+  doc: ExtractedDocument;
+  rows: Row[];
+}
+
+const dmy = (iso: string) => iso.split('-').reverse().join('/');
+const typeName = (t: string) => t.replace(/_/g, ' ');
+
+/** Which document and field a failed rule is about, so the problem can be highlighted on a mini document. */
+export function previewFor(check: Check, docs: DocumentsBySlot, pack: SchemePack): Preview | null {
+  const bySlot = (id: string) => pack.slots.find((s) => s.id === id);
+  const make = (slotId: string, rows: (d: ExtractedDocument) => Row[]): Preview | null => {
+    const slot = bySlot(slotId);
+    const doc = slot && docs[slot.id];
+    return slot && doc ? { slot, doc, rows: rows(doc) } : null;
+  };
+  switch (check.ruleId) {
+    case 'income-financial-year':
+      return make('income_certificate', (d) => [
+        { label: 'Issue date', value: d.issueDate ? dmy(d.issueDate) : 'not found', hl: true },
+        { label: 'Authority', value: d.issuingAuthority ?? '-' },
+        { label: 'Pages', value: String(d.pageCount) },
+      ]);
+    case 'income-ncl':
+      return make('income_certificate', (d) => [
+        { label: 'Pages', value: String(d.pageCount) },
+        { label: 'Contains', value: d.documentTypes.map(typeName).join(', ') || '-', hl: true },
+        { label: 'Issue date', value: d.issueDate ? dmy(d.issueDate) : '-' },
+      ]);
+    case 'name-match': {
+      const slot = pack.slots.find((s) => s.short === check.evidence?.foundLabel);
+      return slot ? make(slot.id, (d) => [
+        { label: 'Name', value: d.applicantName?.english ?? '-', hl: true },
+        { label: 'As printed', value: d.applicantName?.original ?? '-' },
+        { label: 'Language', value: d.language },
+      ]) : null;
+    }
+    case 'dob-match':
+      return make('aadhaar', (d) => [{ label: 'Date of birth', value: d.dateOfBirth ? dmy(d.dateOfBirth) : '-', hl: true }, { label: 'Name', value: d.applicantName?.english ?? '-' }]);
+    case 'category-match':
+      return make('caste_certificate', (d) => [{ label: 'Category', value: d.category ?? '-', hl: true }, { label: 'Name', value: d.applicantName?.english ?? '-' }]);
+    default:
+      return null;
+  }
+}
+
+function MiniDoc({ preview, reduce }: { preview: Preview; reduce: boolean }) {
+  return (
+    <div className="minidoc" aria-label={`Preview of ${preview.slot.short}`} role="group">
+      <div className="docbar"><span className="docsample">PREVIEW</span></div>
+      <p className="doctitle">{preview.slot.short}</p>
+      {preview.rows.map((r) => (
+        <div className="minirow" key={r.label}>
+          <span>{r.label}</span>
+          {r.hl ? (
+            <motion.span className="hl" {...(reduce ? {} : { initial: { backgroundColor: '#FCD34D' }, animate: { backgroundColor: '#FEF3C7' }, transition: { duration: 1 } })}>{r.value}</motion.span>
+          ) : (
+            <span>{r.value}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface Props {
+  docs: DocumentsBySlot;
+  pack: SchemePack;
   report: AuditReport;
   lang: Lang;
   canRecheck: boolean;
@@ -14,16 +87,19 @@ interface Props {
   onRecheck: () => void;
 }
 
-function IssueBody({ check, lang }: { check: Check; lang: Lang }) {
+function IssueBody({ check, lang, preview, reduce }: { check: Check; lang: Lang; preview: Preview | null; reduce: boolean }) {
   const ev = check.evidence;
   return (
     <div className="ibody">
-      {ev && (
-        <div className="evidence">
-          <div className="ev bad"><div className="evlabel">{ev.foundLabel}</div><div className="evval">{ev.found}</div></div>
-          <div className="ev good"><div className="evlabel">{ev.neededLabel}</div><div className="evval">{ev.needed}</div></div>
-        </div>
-      )}
+      <div className="evpreview">
+        {ev && (
+          <div className="evidence" style={{ gridTemplateColumns: '1fr' }}>
+            <div className="ev bad"><div className="evlabel">{ev.foundLabel}</div><div className="evval">{ev.found}</div></div>
+            <div className="ev good"><div className="evlabel">{ev.neededLabel}</div><div className="evval">{ev.needed}</div></div>
+          </div>
+        )}
+        {preview && <MiniDoc preview={preview} reduce={reduce} />}
+      </div>
       {check.usesAi && (
         <span className="ainote"><SparkIcon size={14} />Matched by Gemini across Marathi and English</span>
       )}
@@ -39,7 +115,7 @@ function IssueBody({ check, lang }: { check: Check; lang: Lang }) {
   );
 }
 
-export function Report({ report, lang, canRecheck, onReupload, onRecheck }: Props) {
+export function Report({ docs, pack, report, lang, canRecheck, onReupload, onRecheck }: Props) {
   const reduce = useReduce();
   const failed = report.checks.filter((c) => c.status === 'fail');
   const passed = report.checks.filter((c) => c.status === 'pass');
@@ -91,7 +167,7 @@ export function Report({ report, lang, canRecheck, onReupload, onRecheck }: Prop
                   <ChevronIcon open={isOpen} reduce={reduce} />
                 </button>
                 {reduce ? (
-                  isOpen && <IssueBody check={c} lang={lang} />
+                  isOpen && <IssueBody check={c} lang={lang} preview={previewFor(c, docs, pack)} reduce={reduce} />
                 ) : (
                   <AnimatePresence initial={false}>
                     {isOpen && (
@@ -103,7 +179,7 @@ export function Report({ report, lang, canRecheck, onReupload, onRecheck }: Prop
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.3 }}
                       >
-                        <IssueBody check={c} lang={lang} />
+                        <IssueBody check={c} lang={lang} preview={previewFor(c, docs, pack)} reduce={reduce} />
                       </motion.div>
                     )}
                   </AnimatePresence>

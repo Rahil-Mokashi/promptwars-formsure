@@ -29,7 +29,7 @@ describe('reduced-motion sample flow', () => {
     await user.click(screen.getByRole('button', { name: /re-check/i }));
     expect(await screen.findByRole('heading', { name: 'Ready to submit' })).toBeInTheDocument();
     expect(screen.getByText('100%')).toBeInTheDocument();
-    expect(document.querySelector('.confetti')).toBeNull(); // no confetti when motion is off
+    expect(document.querySelector('.confetti-canvas')).toBeNull(); // no confetti when motion is off
   });
 
   it('shows all checks at once on the audit screen', async () => {

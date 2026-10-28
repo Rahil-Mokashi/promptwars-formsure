@@ -1,14 +1,45 @@
 import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { mahadbtPack } from '../core/schema';
 import type { ApplicationForm, Lang, SchemePack } from '../core/types';
 import { ArrowIcon, FileIcon } from '../icons';
 import { fadeUp, useReduce } from '../motion';
 import { slotNames } from '../names';
+import { Modal } from './Modal';
+
+function PackDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <Modal title="How a scheme pack works" onClose={onClose}>
+      <p className="sub" style={{ marginTop: 0, maxWidth: 'none' }}>
+        A scheme pack is one JSON file of rules. The engine runs only rules marked verified; an AI-drafted rule stays skipped until a person checks it against the official source. Below is the pack that is live now: {mahadbtPack.name}.
+      </p>
+      <div className="tablewrap">
+        <table className="packtable">
+          <caption className="sr-only">Rules in the {mahadbtPack.name} pack</caption>
+          <thead>
+            <tr><th scope="col">Rule</th><th scope="col">Checked by</th><th scope="col">Source</th><th scope="col">Status</th></tr>
+          </thead>
+          <tbody>
+            {mahadbtPack.rules.map((r) => (
+              <tr key={r.id}>
+                <th scope="row" style={{ textAlign: 'left', fontWeight: 600 }}>{r.label}</th>
+                <td><span className={`tag ${r.usesAi ? 'tag-ai' : 'tag-code'}`}>{r.usesAi ? 'AI reads, code decides' : 'Code'}</span></td>
+                <td><a href={r.source.url} target="_blank" rel="noopener noreferrer">{r.source.label}</a></td>
+                <td><span className={`tag ${r.verified ? 'tag-ok' : 'tag-no'}`}>{r.verified ? 'Verified' : 'Not verified, skipped'}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Modal>
+  );
+}
 
 const SCHEMES = [
-  { name: 'Post-Matric Scholarship for OBC students', portal: 'MahaDBT · VJNT, OBC & SBC Welfare', pill: 'Scheme pack ready', on: true },
-  { name: 'Post-Matric Scholarship for VJNT students', portal: 'MahaDBT', pill: 'Coming soon', on: false },
-  { name: 'Tuition and exam fees (Freeship)', portal: 'MahaDBT', pill: 'Coming soon', on: false },
-  { name: 'Add a new scheme', portal: 'Pack builder: AI drafts rules from official guidelines, you verify', pill: 'Pack builder', on: false },
+  { name: 'Post-Matric Scholarship for OBC students', portal: 'MahaDBT · VJNT, OBC & SBC Welfare', pill: 'Scheme pack ready', on: true, opens: false },
+  { name: 'Post-Matric Scholarship for VJNT students', portal: 'MahaDBT', pill: 'Coming soon', on: false, opens: false },
+  { name: 'Tuition and exam fees (Freeship)', portal: 'MahaDBT', pill: 'Coming soon', on: false, opens: false },
+  { name: 'Add a new scheme', portal: 'Pack builder: AI drafts rules from official guidelines, you verify', pill: 'Pack builder', on: false, opens: true },
 ];
 
 interface Props {
@@ -22,6 +53,7 @@ interface Props {
 
 export function Scheme({ pack, lang, form, onForm, onBack, onNext }: Props) {
   const reduce = useReduce();
+  const [packOpen, setPackOpen] = useState(false);
   const years = Array.from(new Set([form.academicYear, '2026-27', '2025-26'].filter(Boolean)));
   const set = (k: keyof ApplicationForm) => (e: { target: { value: string } }) => onForm({ ...form, [k]: e.target.value });
 
@@ -33,9 +65,11 @@ export function Scheme({ pack, lang, form, onForm, onBack, onNext }: Props) {
         {SCHEMES.map((s, i) => (
           <motion.button
             key={s.name}
-            className={`scheme ${s.on ? 'sel' : 'off'}`}
+            className={`scheme ${s.on ? 'sel' : s.opens ? '' : 'off'}`}
             aria-pressed={s.on}
-            aria-disabled={!s.on}
+            aria-disabled={!s.on && !s.opens}
+            aria-haspopup={s.opens ? 'dialog' : undefined}
+            onClick={s.opens ? () => setPackOpen(true) : undefined}
             {...fadeUp(reduce, i * 0.07)}
           >
             <span className="sname">{s.name}</span>
@@ -91,6 +125,7 @@ export function Scheme({ pack, lang, form, onForm, onBack, onNext }: Props) {
           </ul>
         </section>
       </div>
+      {packOpen && <PackDialog onClose={() => setPackOpen(false)} />}
       <div className="actions">
         <button className="btn btn-ghost" onClick={onBack}>Back</button>
         <button className="btn btn-primary" onClick={onNext}>
