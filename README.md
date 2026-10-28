@@ -200,7 +200,7 @@ Target: **WCAG 2.1 AA**.
 - Real buttons, labels and landmarks; keyboard-operable file inputs; dialogs take focus, make the page behind them `inert`, trap Tab, close on Escape and return focus to the opener.
 - `aria-live` regions for audit progress, a `progressbar` role, severity shown as icon + word + colour.
 - **axe tests** (`vitest-axe`) run on every screen and both dialogs with no violations.
-- **Contrast** (computed from the palette): body text 9.3:1 to 17:1, muted text on white 5.9:1, status colours on their tints 4.84:1 to 7.3:1, white on indigo 7.9:1. The lowest pair is green on its tint at 4.84:1. jsdom cannot measure contrast, so the Playwright suite checks it in a real browser.
+- **Contrast** is checked by the Playwright + axe suite in a real browser (jsdom cannot measure it).
 - **Reduced motion.** `useReducedMotion` turns off every Framer Motion animation and the CSS transitions: results appear immediately, no confetti, no ambient drift.
 - **Three languages.** EN / मराठी / हिंदी toggle changes fixes, "why it matters" and document names, and sets `<html lang>`; Marathi and Hindi fragments carry their own `lang`.
 - Works at phone width: one compact header row, step numbers only below 640 px; verified with no horizontal overflow at 390 px.
@@ -209,12 +209,12 @@ Not done: a full screen-reader pass with NVDA / VoiceOver. axe catches structura
 
 ## Testing
 
-`npm test` runs **270 unit and component tests in 28 files**. `npm run test:e2e` runs **Playwright** against the production build on desktop and a phone viewport: the whole sample flow, a real-browser **axe** scan (WCAG 2.1 AA, including colour contrast) on every screen, and a no-horizontal-scroll check at 390 px. (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
+`npm test` runs **281 unit and component tests in 31 files**. `npm run test:e2e` runs **Playwright** against the production build on desktop and a phone viewport: the whole sample flow, a real-browser **axe** scan (WCAG 2.1 AA, including colour contrast) on every screen, and a no-horizontal-scroll check at 390 px. (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
 
-| Coverage                                                | Statements | Branches | Functions | Lines  |
-| ------------------------------------------------------- | ---------- | -------- | --------- | ------ |
-| `src/core` (rules engine, validation, masking, preview) | 99.6 %     | 91.6 %   | 100 %     | 99.7 % |
-| Whole `src`                                             | 95.5 %     | 86.6 %   | 94.5 %    | 97.3 % |
+| Coverage                            | Statements | Branches | Functions | Lines  |
+| ----------------------------------- | ---------- | -------- | --------- | ------ |
+| `src/core` (enforced minimum in CI) | 90 %       | 85 %     | 90 %      | 90 %   |
+| Whole `src` (measured 2026-10-28)   | 95.6 %     | 86.6 %   | 95.5 %    | 96.6 % |
 
 What is covered:
 
@@ -231,7 +231,7 @@ What is covered:
 - Accessibility: axe on every screen with zero violations, in jsdom and in a real Chromium browser (Playwright), where colour contrast is checked too.
 - Advisory rules: pending rules run and are shown, but never change readiness or the scored totals.
 
-CI (`.github/workflows/ci.yml`) runs lint, typecheck, `test:coverage`, build and the Playwright browser tests on every push.
+CI (`.github/workflows/ci.yml`) runs format check, lint, typecheck, knip, `test:coverage`, build and the Playwright browser tests on every push.
 
 ```bash
 npm test                # all tests
@@ -243,17 +243,9 @@ npm run typecheck
 
 ## Performance
 
-Vendor code is split so no chunk exceeds 500 KB (largest: 216 KB). The Firebase SDK is loaded only when someone uploads a file for live reading, so the sample flow never downloads it.
+Vendor code is split so no chunk exceeds 500 KB (see the build output for sizes). The Firebase SDK is loaded only when someone uploads a file for live reading, so the sample flow never downloads it.
 
-| Chunk                                                             | Raw      | Gzip    | Loaded                 |
-| ----------------------------------------------------------------- | -------- | ------- | ---------------------- |
-| `react`                                                           | 210.5 KB | 65.7 KB | on start               |
-| `framer-motion` (`LazyMotion` + `domAnimation`, `m.*` components) | 96.5 KB  | 34.4 KB | on start               |
-| app (`index`, includes both scheme packs)                         | 215.5 KB | 58.9 KB | on start               |
-| `firebase` (app + AI Logic + App Check)                           | 95.2 KB  | 29.1 KB | lazy, live upload only |
-| CSS                                                               | 18.8 KB  | 4.7 KB  | on start               |
-
-Initial JavaScript is about 523 KB raw / 159 KB gzip. `LazyMotion` cut the animation chunk by 40 %. I have not run Lighthouse or measured real-device load times.
+Bundle sizes are printed by `npm run build`. I have not run Lighthouse or measured real-device load times.
 
 ## Run and deploy
 
