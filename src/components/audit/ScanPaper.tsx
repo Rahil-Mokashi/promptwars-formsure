@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { toDevanagari } from '../../core/names';
 import type { ExtractedDocument, SlotDef } from '../../core/types';
@@ -12,9 +12,9 @@ const devanagariDate = (iso: string): string => toDevanagari(iso.split('-').reve
 export function FoundField({ children, reduce }: { children: ReactNode; reduce: boolean }) {
   if (reduce) return <span className="hl">{children}</span>;
   return (
-    <motion.span className="hl" initial={{ backgroundColor: '#FCD34D', scale: 1.06 }} animate={{ backgroundColor: '#FEF3C7', scale: 1 }} transition={{ duration: PULSE_S }}>
+    <m.span className="hl" initial={{ backgroundColor: '#FCD34D', scale: 1.06 }} animate={{ backgroundColor: '#FEF3C7', scale: 1 }} transition={{ duration: PULSE_S }}>
       {children}
-    </motion.span>
+    </m.span>
   );
 }
 
@@ -35,7 +35,7 @@ export interface ScanPaperProps {
 export function ScanPaper({ slot, doc, label, scanning, designIncome, reduce }: ScanPaperProps) {
   return (
     <div className="paper">
-      {scanning && <motion.div className="scan" animate={reduce ? undefined : { y: ['-100%', '375%'] }} transition={{ duration: SCAN_PASS_S, ease: 'linear', repeat: Infinity }} />}
+      {scanning && <m.div className="scan" animate={reduce ? undefined : { y: ['-100%', '375%'] }} transition={{ duration: SCAN_PASS_S, ease: 'linear', repeat: Infinity }} />}
       <div className="docbar">
         <span className="docsample dev" lang="mr">नमुना · SAMPLE</span>
         <span className="mono" style={{ fontSize: 12, color: '#5B6478' }}>{label}</span>

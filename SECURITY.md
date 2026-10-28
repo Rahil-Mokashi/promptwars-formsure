@@ -50,9 +50,9 @@ FormSure stores no document data anywhere: no server, no database, and no `local
 ## Known gaps
 
 - **App Check only protects the quota once enforcement is switched on in the Firebase console**; reCAPTCHA is probabilistic, not a guarantee.
-- The client-side limiter, form validation and file checks run in the browser, so a determined user can bypass them. Server-side limits come from App Check and the Firebase AI Logic quotas.
+- **Client-side rate limiter is a usability safeguard:** The limiter's `sessionStorage` timestamps are scoped to a single tab and provide reload persistence within that tab only. Authoritative quota protection and abuse prevention relies on provider-side Firebase App Check (reCAPTCHA Enterprise) and Google Cloud project quotas. The client-side checks and form validation run in the browser, so a determined user can bypass them.
+- **Visual document redaction is not implemented:** Text-level 12-digit number masking (`maskAadhaar`, `maskDeep`) is strictly applied across all model outputs, reports, logs, and filenames before display or download. However, pre-transmission visual redaction of uploaded images or PDFs (such as drawing masks over card numbers or redacting QR codes) is **not implemented**; raw document scans are transmitted to Google's Gemini API for OCR reading, stripped of image EXIF metadata only.
 - Magic bytes and the PDF checks are heuristics: they show a file starts like a PNG, JPEG, WebP or PDF and has no obvious damage, not that its contents are harmless. PDF page counting can fail when the page tree is compressed; the model's own page count is checked after reading.
 - PDF metadata is sent as-is.
 - `style-src` allows `'unsafe-inline'` because Framer Motion sets inline styles.
-- The limiter’s `sessionStorage` timestamps are per tab: opening a new tab, or clearing site data, starts a fresh count. It is a courtesy limit, not a security control.
 - Only fictional sample data is in this repository.

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { fadeUp } from '../components/motionProps';
 import { ArrowIcon, CapIcon, LockIcon } from '../components/icons';
 import { HeroArt } from '../components/landing/HeroArt';
@@ -13,9 +13,9 @@ function Aurora({ reduce }: { reduce: boolean }) {
     reduce ? {} : { animate: { x, y }, transition: { duration: seconds, repeat: Infinity, repeatType: 'mirror' as const, ease: 'easeInOut' as const } };
   return (
     <div className="aurora" aria-hidden="true">
-      <motion.i className="a1" {...blob([0, 80, -20], [0, 40, 10], BLOB_DRIFT_S[0])} />
-      <motion.i className="a2" {...blob([0, -70, 20], [0, 60, -10], BLOB_DRIFT_S[1])} />
-      <motion.i className="a3" {...blob([0, 50, -40], [0, -30, 20], BLOB_DRIFT_S[2])} />
+      <m.i className="a1" {...blob([0, 80, -20], [0, 40, 10], BLOB_DRIFT_S[0])} />
+      <m.i className="a2" {...blob([0, -70, 20], [0, 60, -10], BLOB_DRIFT_S[1])} />
+      <m.i className="a3" {...blob([0, 50, -40], [0, -30, 20], BLOB_DRIFT_S[2])} />
     </div>
   );
 }
@@ -33,7 +33,7 @@ export function Landing({ error, onSample, onStart }: LandingProps) {
   return (
     <main className="wrap hero" id="main" tabIndex={-1}>
       <Aurora reduce={reduce} />
-      <motion.div {...fadeUp(reduce, 0, HERO_FADE_S)}>
+      <m.div {...fadeUp(reduce, 0, HERO_FADE_S)}>
         <p className="eyebrow"><CapIcon size={14} />For MahaDBT scholarship applicants</p>
         <h1 className="h1">Check before<br />you submit.</h1>
         <p className="lead">FormSure reads your documents, checks them against your scheme’s rules, and shows exactly what to fix, before your application gets sent back.</p>
@@ -53,7 +53,7 @@ export function Landing({ error, onSample, onStart }: LandingProps) {
           <li><span className="hownum">03</span>Fix before you submit</li>
         </ol>
         <p className="trust"><LockIcon size={16} />Nothing is stored. Every rule links to its official source.</p>
-      </motion.div>
+      </m.div>
       <HeroArt reduce={reduce} />
     </main>
   );

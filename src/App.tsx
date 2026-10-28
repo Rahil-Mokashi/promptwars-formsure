@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { maskAadhaar } from './core/mask';
 import type { SlotId } from './core/types';
@@ -72,7 +72,7 @@ export function App() {
         <div key={flow.screen}>{body}</div>
       ) : (
         <AnimatePresence mode="wait">
-          <motion.div
+          <m.div
             key={flow.screen}
             initial={{ opacity: 0, y: PAGE_RISE_PX }}
             animate={{ opacity: 1, y: 0 }}
@@ -80,7 +80,7 @@ export function App() {
             transition={{ duration: PAGE_FADE_S, ease: EASE }}
           >
             {body}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
       )}
     </div>

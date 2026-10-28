@@ -66,7 +66,9 @@ function save(storage: LimiterStorage | null, key: string, calls: readonly numbe
 /**
  * Creates a limiter that allows at most `maxRequests` calls in any rolling `windowMs` (default 8 a minute) and at most
  * `dailyMax` in any rolling day (default 60). Every attempt counts, retries included.
- * With `storage` the timestamps survive a page reload, so reloading does not reset the quota.
+ * With `storage` (sessionStorage) timestamps survive a page reload within the tab, so a reload does not reset the quota.
+ * Note: client-side limiting is a fair-use and usability guardrail; authoritative abuse prevention is enforced
+ * provider-side via Firebase App Check (reCAPTCHA Enterprise) and Google Cloud project quotas.
  */
 export function createRateLimiter({
   maxRequests = MAX_REQUESTS_PER_WINDOW,
@@ -85,10 +87,10 @@ export function createRateLimiter({
     async acquire(onWait) {
       for (;;) {
         const t = now();
-        // Reloaded from storage on every attempt, so another tab of the same session is respected too.
+        // Reloaded from storage on every attempt, providing reload persistence within this tab session.
         const stored = load(storage, storageKey, t, dailyWindowMs, dailyMax + 1);
         const mine = memory.filter((c) => t - c < dailyWindowMs);
-        const today = stored.length >= mine.length ? stored : mine; // storage wins when another tab added calls
+        const today = stored.length >= mine.length ? stored : mine;
         if (today.length >= dailyMax) throw new RateLimitError(DAILY_MESSAGE);
         const recent = today.filter((c) => t - c < windowMs);
         const oldest = recent[0];

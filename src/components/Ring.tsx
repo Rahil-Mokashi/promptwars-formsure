@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { useId } from 'react';
 import { useCountUp, useReduce } from '../hooks/useMotion';
 import { EASE } from './motionProps';
@@ -48,7 +48,7 @@ export function Ring({ pct, counts }: RingProps) {
           </linearGradient>
         </defs>
         <circle className="ring-bg" cx="66" cy="66" r="54" />
-        <motion.circle
+        <m.circle
           className="ring-fg" cx="66" cy="66" r="54" stroke={`url(#${gradientId})`}
           initial={reduce ? false : { strokeDashoffset: CIRCUMFERENCE }}
           animate={{ strokeDashoffset: CIRCUMFERENCE * (1 - pct / FULL) }}

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import type { AuditReport, Check, ReadProgress } from '../../core/types';
 import { DashIcon, QuestionIcon, Spinner, Tick, XIcon } from '../icons';
 
@@ -17,9 +17,9 @@ function StatusIcon({ state, reduce }: { state: RowState; reduce: boolean }) {
       return <span className="cicon ci-pass"><Tick reduce={reduce} /></span>;
     case 'fail':
       return (
-        <motion.span className="cicon ci-fail" animate={reduce ? undefined : { x: [0, -SHAKE_PX, SHAKE_PX, 0] }} transition={{ duration: SHAKE_S }}>
+        <m.span className="cicon ci-fail" animate={reduce ? undefined : { x: [0, -SHAKE_PX, SHAKE_PX, 0] }} transition={{ duration: SHAKE_S }}>
           <XIcon size={14} />
-        </motion.span>
+        </m.span>
       );
     case 'needs_review':
       return <span className="cicon ci-review"><QuestionIcon size={14} /></span>;

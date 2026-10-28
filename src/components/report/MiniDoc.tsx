@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import type { Preview } from '../../core/preview';
 
 const FLASH_S = 1;
@@ -13,9 +13,9 @@ export function MiniDoc({ preview, reduce }: { preview: Preview; reduce: boolean
         <div className="minirow" key={row.label}>
           <span>{row.label}</span>
           {row.hl ? (
-            <motion.span className="hl" {...(reduce ? {} : { initial: { backgroundColor: '#FCD34D' }, animate: { backgroundColor: '#FEF3C7' }, transition: { duration: FLASH_S } })}>
+            <m.span className="hl" {...(reduce ? {} : { initial: { backgroundColor: '#FCD34D' }, animate: { backgroundColor: '#FEF3C7' }, transition: { duration: FLASH_S } })}>
               {row.value}
-            </motion.span>
+            </m.span>
           ) : (
             <span>{row.value}</span>
           )}

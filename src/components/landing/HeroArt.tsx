@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 const FLOAT_RISE_PX = -10;
 const TILT_DEG = 7;
@@ -32,20 +32,20 @@ const tilt = (reduce: boolean, rotate: number) =>
 export function HeroArt({ reduce }: { reduce: boolean }) {
   return (
     <div className="stack" aria-hidden="true">
-      <motion.div className="doc doc-back" {...tilt(reduce, -8)}>
+      <m.div className="doc doc-back" {...tilt(reduce, -8)}>
         <div className="docbar"><span className="docsample">SAMPLE</span></div>
         <p className="doctitle">Marksheet</p>
         <div className="docline w90" /><div className="docline w60" /><div className="docline w80" /><div className="docline w40" />
         <p className="docfield">Name: <span className="hl">Arav Sunil Patil</span></p>
-      </motion.div>
-      <motion.div className="doc doc-mid" {...tilt(reduce, 6)}>
+      </m.div>
+      <m.div className="doc doc-mid" {...tilt(reduce, 6)}>
         <div className="docbar"><span className="docsample">SAMPLE</span></div>
         <p className="doctitle dev" lang="mr">आधार कार्ड</p>
         <div className="docline w80" /><div className="docline w60" />
         <p className="docfield mono">XXXX XXXX 4417</p>
-      </motion.div>
-      <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} {...float(reduce, 6)}>
-        <motion.div
+      </m.div>
+      <m.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} {...float(reduce, 6)}>
+        <m.div
           className="doc doc-front"
           style={{ pointerEvents: 'auto' }}
           {...(reduce ? {} : { whileHover: { rotateX: TILT_DEG - 1, rotateY: -(TILT_DEG - 1), scale: TILT_SCALE }, transition: SPRING })}
@@ -56,14 +56,14 @@ export function HeroArt({ reduce }: { reduce: boolean }) {
           <p className="docfield dev" lang="mr">नाव: <span className="hl">आरव सुनील पाटील</span></p>
           <p className="docfield dev" lang="mr">दिनांक: १२/०५/२०२५</p>
           <div className="flag">
-            <motion.span className="flag-bad" {...flag(reduce, [1, 1, 0, 0, 1], true)}>Certificate from last financial year</motion.span>
-            <motion.span className="flag-good" {...flag(reduce, [0, 0, 1, 1, 0], false)}>Fixed · ready to submit</motion.span>
+            <m.span className="flag-bad" {...flag(reduce, [1, 1, 0, 0, 1], true)}>Certificate from last financial year</m.span>
+            <m.span className="flag-good" {...flag(reduce, [0, 0, 1, 1, 0], false)}>Fixed · ready to submit</m.span>
           </div>
-        </motion.div>
-      </motion.div>
-      <motion.div className="chipfloat" {...float(reduce, 7, -2)}>
+        </m.div>
+      </m.div>
+      <m.div className="chipfloat" {...float(reduce, 7, -2)}>
         <small>AI name match</small><span className="dev" lang="mr">आरव</span> → Aarav ≠ Arav
-      </motion.div>
+      </m.div>
     </div>
   );
 }

@@ -70,10 +70,11 @@ export function useFlow(): Flow {
   const [validating, setValidating] = useState(0);
   const liveAvailable = useMemo(() => isLiveReadingAvailable(), []);
   const activeRun = useRef(0); // a newer run, or leaving the audit screen, cancels an older one
-  const reader = useDocumentReader(state.files);
-  const { cancel, reset, invalidate, readAll } = reader;
   const { sample, form, files, consent } = state;
   const pack = useMemo(() => wirePack(state.packId), [state.packId]);
+  const slotOrder = useMemo(() => pack.slots.map((s) => s.id), [pack]);
+  const reader = useDocumentReader(state.files, slotOrder);
+  const { cancel, reset, invalidate, readAll } = reader;
 
   useEffect(() => {
     document.documentElement.lang = state.lang;

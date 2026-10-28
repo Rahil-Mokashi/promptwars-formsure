@@ -8,7 +8,7 @@ export type Screen = 'landing' | 'scheme' | 'upload' | 'audit' | 'report' | 'rea
 export type FormErrors = Partial<Record<keyof ApplicationForm, string>>;
 
 /** Form before the applicant has typed anything. */
-export const EMPTY_FORM: ApplicationForm = { fullName: '', dateOfBirth: '', category: 'OBC', academicYear: '2026-27', applicationType: 'Fresh' };
+export const EMPTY_FORM: ApplicationForm = { fullName: '', dateOfBirth: '', category: 'OBC', academicYear: '2025-26', applicationType: 'Fresh' };
 
 /** The scheme pack used until another is chosen. */
 export const DEFAULT_PACK = 'mahadbt-postmatric-obc';

@@ -3,7 +3,7 @@ import { READ_CONCURRENCY, READ_STAGGER_MS, UNAVAILABLE_MESSAGE } from '../core/
 import { ExtractionError, UnavailableError } from '../core/errors';
 import { maskAadhaar } from '../core/mask';
 import type { DocumentsBySlot, ReadProgress, SlotId, SlotReadState } from '../core/types';
-import { extract, pack } from '../services/api';
+import { extract } from '../services/api';
 import { readFiles, type ReadCache, type ReadOutcome } from '../services/readFiles';
 import { sleep } from '../services/sleep';
 
@@ -32,10 +32,11 @@ export interface DocumentReader {
   reset: () => void;
 }
 
-const SLOT_ORDER: readonly SlotId[] = pack.slots.map((s) => s.id);
-
-/** Reads the selected files with Gemini: one at a time, cached, retryable per file. */
-export function useDocumentReader(files: Files): DocumentReader {
+/**
+ * Reads the selected files with Gemini: cached, retryable per file.
+ * @param order slot ids of the chosen scheme pack, in reading order
+ */
+export function useDocumentReader(files: Files, order: readonly SlotId[]): DocumentReader {
   const cache = useRef<ReadCache>(new Map());
   const token = useRef(0);
   const [progress, setProgress] = useState<ReadProgress | null>(null);
@@ -55,7 +56,7 @@ export function useDocumentReader(files: Files): DocumentReader {
     setProgress(null);
     setSlotStates({});
     return readFiles({
-      order: SLOT_ORDER,
+      order,
       files,
       cache: cache.current,
       extract: (file, options) => extract(file, options),
@@ -70,7 +71,7 @@ export function useDocumentReader(files: Files): DocumentReader {
       },
       isCancelled: () => token.current !== me,
     });
-  }, [files, setSlot]);
+  }, [files, order, setSlot]);
 
   const retry = useCallback(
     async (slotId: SlotId) => {

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import type { CSSProperties, ReactNode } from 'react';
 
 const DEFAULT_SIZE = 18;
@@ -61,15 +61,15 @@ export const CalendarIcon = (p: IconProps) => (<Svg {...p}><rect x="3" y="5" wid
 
 /** Chevron that turns upside down when its card is open. */
 export const ChevronIcon = ({ open, reduce }: { open: boolean; reduce: boolean }) => (
-  <motion.span className="chev" style={{ display: 'inline-flex' }} animate={{ rotate: open ? 180 : 0 }} transition={{ duration: reduce ? 0 : CHEVRON_TURN_S }}>
+  <m.span className="chev" style={{ display: 'inline-flex' }} animate={{ rotate: open ? 180 : 0 }} transition={{ duration: reduce ? 0 : CHEVRON_TURN_S }}>
     <Svg size={CHEVRON_SIZE}><path d="M6 9l6 6 6-6" /></Svg>
-  </motion.span>
+  </m.span>
 );
 
 /** Check mark that draws itself (the design's stroke-dashoffset "tick"). */
 export const Tick = ({ size = 14, reduce }: { size?: number; reduce: boolean }) => (
   <Svg size={size}>
-    <motion.path
+    <m.path
       d="M5 12l5 5 9-10"
       initial={reduce ? false : { pathLength: 0 }}
       animate={{ pathLength: 1 }}
@@ -80,11 +80,11 @@ export const Tick = ({ size = 14, reduce }: { size?: number; reduce: boolean }) 
 
 /** Spinning arc shown while a check or a read is running. */
 export const Spinner = ({ reduce }: { reduce: boolean }) => (
-  <motion.span
+  <m.span
     style={{ display: 'inline-flex' }}
     animate={reduce ? undefined : { rotate: 360 }}
     transition={{ duration: SPIN_S, ease: 'linear', repeat: Infinity }}
   >
     <Svg size={SPINNER_SIZE}><path d="M12 3a9 9 0 019 9" /></Svg>
-  </motion.span>
+  </m.span>
 );

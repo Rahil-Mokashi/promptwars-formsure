@@ -1,8 +1,8 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { useReduce } from '../hooks/useMotion';
 
-const FOCUSABLE = 'a[href],button:not([disabled]),input,select,[tabindex]:not([tabindex="-1"])';
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
 const OPEN_S = 0.25;
 const OPEN_RISE_PX = 18;
 const OPEN_SCALE_FROM = 0.98;
@@ -31,7 +31,24 @@ function trapTab(event: KeyboardEvent, box: HTMLElement): void {
   }
 }
 
-/** Accessible modal: labelled dialog, Escape closes, Tab stays inside, focus returns to the opener. */
+/**
+ * Marks every sibling of `overlay` and of each of its ancestors as `inert` and returns them, so they can be restored.
+ * Elements that were already inert are left alone.
+ */
+function inertBackground(overlay: HTMLElement | null): HTMLElement[] {
+  const marked: HTMLElement[] = [];
+  for (let node = overlay; node && node !== document.body; node = node.parentElement) {
+    for (const sibling of node.parentElement?.children ?? []) {
+      if (sibling !== node && sibling instanceof HTMLElement && !sibling.hasAttribute('inert')) {
+        sibling.setAttribute('inert', '');
+        marked.push(sibling);
+      }
+    }
+  }
+  return marked;
+}
+
+/** Accessible modal: labelled dialog, background inert, Escape closes, Tab stays inside, focus returns to the opener. */
 export function Modal({ title, onClose, children, printable }: ModalProps) {
   const reduce = useReduce();
   const titleId = useId();
@@ -43,7 +60,9 @@ export function Modal({ title, onClose, children, printable }: ModalProps) {
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
-    box.current?.querySelector<HTMLElement>('button')?.focus();
+    // Everything behind the dialog becomes inert, so neither keyboard nor screen reader can reach it.
+    const background = inertBackground(box.current?.parentElement ?? null);
+    box.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') return close.current();
       if (event.key === 'Tab' && box.current) trapTab(event, box.current);
@@ -51,6 +70,7 @@ export function Modal({ title, onClose, children, printable }: ModalProps) {
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
+      for (const el of background) el.removeAttribute('inert');
       opener?.focus();
     };
   }, []);
@@ -61,13 +81,13 @@ export function Modal({ title, onClose, children, printable }: ModalProps) {
 
   return (
     <div className="overlay" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <motion.div ref={box} className={`modal ${printable ? 'printable' : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} {...entrance}>
+      <m.div ref={box} className={`modal ${printable ? 'printable' : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} {...entrance}>
         <div className="modalhead noprint">
           <h2 id={titleId}>{title}</h2>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
         </div>
         {children}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

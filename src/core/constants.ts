@@ -64,7 +64,7 @@ export const REENCODE_QUALITY = 0.92;
 /** How many bytes at the end of a PDF are searched for the end-of-file marker. */
 export const PDF_TAIL_BYTES = 2048;
 
-/** A device may make this many Gemini calls per day (kept in memory only: nothing is written to browser storage). */
+/** A device may make this many Gemini calls per day (timestamps only, kept in memory and in this tab's sessionStorage). */
 export const MAX_REQUESTS_PER_DAY = 60;
 
 /** Length of the daily window. */

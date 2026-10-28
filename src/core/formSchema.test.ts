@@ -5,7 +5,7 @@ import './schema';
 import type { ApplicationForm } from './types';
 
 const NOW = new Date('2026-10-28T06:00:00Z');
-const good: ApplicationForm = { fullName: 'Aarav Sunil Patil', dateOfBirth: '2006-03-14', category: 'OBC', academicYear: '2026-27', applicationType: 'Fresh' };
+const good: ApplicationForm = { fullName: 'Aarav Sunil Patil', dateOfBirth: '2006-03-14', category: 'OBC', academicYear: '2025-26', applicationType: 'Fresh' };
 const errorsOf = (form: Partial<ApplicationForm>) => {
   const r = validateForm({ ...good, ...form }, NOW);
   return r.ok ? {} : r.errors;

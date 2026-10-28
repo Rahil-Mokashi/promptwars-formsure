@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_SLOTS, NOW, allRulesPack, audit, checkOf, fixed, patchDoc, sample, shippedAudit, statusOf, verifying, withoutDoc } from '../test/docs';
+import { ALL_SLOTS, NOW, allRulesPack, audit, checkOf, fixed, patchDoc, sample, shippedAudit, statusOf, withoutDoc } from '../test/docs';
 import { assertNever } from './assertNever';
 import { fyLabel, fyStartYear, longDate } from './dates';
 import { mahadbtPack, mahadbtScPack } from './schema';
@@ -138,15 +138,20 @@ describe('field_consistency', () => {
   });
 });
 
-describe('numeric_max', () => {
-  const pack = verifying(['income-limit']);
+describe('numeric_max evaluator', () => {
   const statusFor = (annualIncome: number | null) =>
-    checkOf(audit(patchDoc(fixed, 'income_certificate', { annualIncome }), sample.form, NOW, pack), 'income-limit').status;
+    checkOf(audit(patchDoc(fixed, 'income_certificate', { annualIncome }), { ...sample.form, category: 'SC' }, NOW, mahadbtScPack), 'income-limit').status;
 
   it('passes at the maximum, fails above it, needs review when unreadable', () => {
-    expect(statusFor(800_000)).toBe('pass');
-    expect(statusFor(9_000_000)).toBe('fail');
+    expect(statusFor(250_000)).toBe('pass');
+    expect(statusFor(250_001)).toBe('fail');
     expect(statusFor(null)).toBe('needs_review');
+  });
+
+  it('the OBC pack keeps income limit disabled/not-evaluated until authoritative documentation confirms the threshold', () => {
+    expect(checkOf(shippedAudit(patchDoc(fixed, 'income_certificate', { annualIncome: 250_000 })), 'income-limit').status).toBe('not_evaluated');
+    expect(checkOf(shippedAudit(patchDoc(fixed, 'income_certificate', { annualIncome: 800_000 })), 'income-limit').status).toBe('not_evaluated');
+    expect(checkOf(shippedAudit(patchDoc(fixed, 'income_certificate', { annualIncome: 9_000_000 })), 'income-limit').status).toBe('not_evaluated');
   });
 });
 

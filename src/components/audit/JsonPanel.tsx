@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import type { ExtractedDocument } from '../../core/types';
 
@@ -43,7 +43,7 @@ export function JsonPanel({ doc, active, reduce }: JsonPanelProps) {
     <div className="json mono" aria-live="polite">
       <div style={{ color: '#8B93A7' }}>{doc ? '// extracted by Gemini' : '// no file for this slot'}</div>
       {lines.slice(0, count).map(([key, value]) => (
-        <motion.div
+        <m.div
           key={key}
           {...(reduce
             ? {}
@@ -54,7 +54,7 @@ export function JsonPanel({ doc, active, reduce }: JsonPanelProps) {
               })}
         >
           <span className="k">{key}</span>: <span className="v">{value}</span>
-        </motion.div>
+        </m.div>
       ))}
     </div>
   );

@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { useState } from 'react';
 import { Confetti } from '../components/Confetti';
 import { CalendarIcon, DownloadIcon } from '../components/icons';
@@ -27,7 +27,7 @@ export function Ready({ report, form, onRestart }: ReadyProps) {
       {!reduce && <Confetti />}
       <section className="card ready" aria-labelledby="ready-h">
         <Ring pct={report.readiness} counts={{ passed: report.passed, failed: report.failed, needsReview: report.needsReview }} />
-        <motion.h1 className="h2" id="ready-h" style={{ marginTop: 24 }} {...fadeUp(reduce, 0.3)}>Pre-check complete</motion.h1>
+        <m.h1 className="h2" id="ready-h" style={{ marginTop: 24 }} {...fadeUp(reduce, 0.3)}>Pre-check complete</m.h1>
         <p className="sub" style={{ margin: '10px auto 0' }}>
           {precheckSummary(report.passed, report.failed, report.needsReview)} {report.notEvaluated > 0 && `${report.notEvaluated} ${report.notEvaluated === 1 ? 'rule was' : 'rules were'} not evaluated because ${report.notEvaluated === 1 ? 'its' : 'their'} sources are not official or conflict.`}
         </p>

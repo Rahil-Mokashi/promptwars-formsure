@@ -19,8 +19,11 @@ function downloadText(report: AuditReport, form: ApplicationForm): void {
   const link = document.createElement('a');
   link.href = url;
   link.download = 'formsure-checklist.txt';
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  // Revoke after the click has been handled; revoking at once cancels the download in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 /** Props of {@link ChecklistDialog}. */

@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import type { Preview } from '../../core/preview';
 import type { Check, Lang } from '../../core/types';
 import { ChevronIcon, QuestionIcon, WarnIcon } from '../icons';
@@ -25,7 +25,7 @@ export function IssueCard({ check, index, lang, open, preview, reduce, onToggle 
   const review = check.status === 'needs_review';
   const body = <IssueBody check={check} lang={lang} preview={preview} reduce={reduce} />;
   return (
-    <motion.article className={`card issue ${review ? 'issue-review' : ''}`} layout={!reduce} {...fadeUp(reduce, STAGGER_START_S + index * STAGGER_STEP_S)}>
+    <m.article className={`card issue ${review ? 'issue-review' : ''}`} layout={!reduce} {...fadeUp(reduce, STAGGER_START_S + index * STAGGER_STEP_S)}>
       <button className="issue-head" onClick={onToggle} aria-expanded={open}>
         <span className={`sev ${review ? 'sev-review' : ''}`}>
           {review ? <QuestionIcon size={14} /> : <WarnIcon size={14} />}
@@ -42,12 +42,12 @@ export function IssueCard({ check, index, lang, open, preview, reduce, onToggle 
       ) : (
         <AnimatePresence initial={false}>
           {open && (
-            <motion.div key="body" style={{ overflow: 'hidden' }} initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: OPEN_S }}>
+            <m.div key="body" style={{ overflow: 'hidden' }} initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: OPEN_S }}>
               {body}
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       )}
-    </motion.article>
+    </m.article>
   );
 }

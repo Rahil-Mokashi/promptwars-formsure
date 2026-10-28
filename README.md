@@ -14,7 +14,7 @@ Sample applicant "Aarav Sunil Patil" (fictional). All screenshots are from the b
 |---|---|---|
 | ![Landing](docs/screenshots/01-landing.png) | ![Scheme picker](docs/screenshots/02-scheme.png) | ![Upload](docs/screenshots/03-upload.png) |
 
-| Live audit | Readiness report (57 %) | Ready (100 %) |
+| Live audit | Readiness report | Ready (100 %) |
 |---|---|---|
 | ![Live audit](docs/screenshots/04-audit.png) | ![Report](docs/screenshots/05-report.png) | ![Ready](docs/screenshots/06-ready.png) |
 
@@ -67,16 +67,20 @@ flowchart LR
 
 ## The 8 rules
 
-| # | Rule | Checked by | Source | Verified |
-|---|------|------------|--------|----------|
-| 1 | Required documents present | Code | [IndiaScholarships guide](https://www.indiascholarships.in/hi/scholarships/maharashtra-postmatric-obc) | Yes |
-| 2 | Right document in each slot | AI reads, code decides | [IndiaScholarships guide](https://www.indiascholarships.in/hi/scholarships/maharashtra-postmatric-obc) | Yes |
-| 3 | Income certificate issued in the current Indian financial year (1 Apr – 31 Mar, IST) | Code | [MahaDBT 2.0 guide](https://anantamias.com/mahadbt/) | Yes |
-| 4 | OBC / SBC / VJNT: income slot holds income certificate **and** non-creamy layer | AI reads, code decides | [College notice](https://vazecollege.net/wp-content/uploads/2026/02/Notice-for-Reserve-Caste-Cetogary-Students-SFC-for-2025-26.pdf) | Yes |
-| 5 | Name matches the form across Aadhaar, income certificate, marksheet | AI reads, code decides | [CareerIndia](https://www.careerindia.com/news/mahadbt-1-0-portal-closing-today-urgent-scholarship-verification-steps-2026-011-65787.html) | Yes |
-| 6 | Date of birth matches Aadhaar | Code | [CareerIndia](https://www.careerindia.com/news/mahadbt-1-0-portal-closing-today-urgent-scholarship-verification-steps-2026-011-65787.html) | Yes |
-| 7 | Category matches caste certificate | Code | [IndiaScholarships guide](https://www.indiascholarships.in/hi/scholarships/maharashtra-postmatric-obc) | Yes |
-| 8 | Family income within limit | Code | [MahaDBT 2.0 guide](https://anantamias.com/mahadbt/) | **No: skipped** (sources conflict) |
+Each rule carries a register status. **Only `verified` rules are applied**; `pending` (secondary sources only) and `conflicting` (sources disagree) rules are shown in the report as *not evaluated*, never guessed. This table matches the shipped JSON packs exactly (`npm run rules:register` regenerates [RULES.md](RULES.md) from them).
+
+| # | Rule | Checked by | OBC pack | SC pack |
+|---|------|------------|----------|---------|
+| 1 | Required documents present | Code | conflicting: skipped | conflicting: skipped |
+| 2 | Right document in each slot | AI reads, code decides | **verified: applied** | pending: skipped |
+| 3 | Income certificate issued in the current Indian financial year (1 Apr – 31 Mar, IST) | Code | conflicting: skipped | conflicting: skipped |
+| 4 | OBC / SBC / VJNT: income slot holds income certificate **and** non-creamy layer | AI reads, code decides | **verified: applied** | n/a |
+| 5 | Name matches the form across Aadhaar, income certificate, marksheet | AI reads, code decides | pending: skipped | pending: skipped |
+| 6 | Date of birth matches Aadhaar | Code | pending: skipped | pending: skipped |
+| 7 | Category matches caste certificate | Code | pending: skipped | pending: skipped |
+| 8 | Family income within limit | Code | conflicting: skipped | **verified: applied** (₹2,50,000) |
+
+Every rule type is implemented and fully tested (`src/core/engine.test.ts` runs all of them with a test pack that marks them verified). Turning a rule on is a data change, not a code change: set `status: "verified"` once an official source or college notice backs it.
 
 "AI reads, code decides" means Gemini supplies the extracted field (document types, transliterated name); the verdict is still computed by code.
 
@@ -106,8 +110,16 @@ src/core/           runs in the browser
   schemes/*.json      the scheme pack (rules)
   engine.ts           runAudit(pack, form, documents, now)
   sample.ts           fictional fixtures (error + fixed)
-  extract.ts          Zod validation of Gemini output, retry once, file checks, 12-digit masking
-  live.ts             Gemini via Firebase AI Logic (lazy-loaded)
+  rules/*.ts          one evaluator per rule type
+  fileValidation.ts   type, size, magic bytes, PDF and image checks
+  mask.ts             12-digit (Aadhaar) masking and log-safe errors
+  preview.ts          which field of which document an issue is about
+src/services/
+  extraction.ts       Zod validation of Gemini output, 429 backoff, timeout retry
+  firebase.ts         Gemini via Firebase AI Logic + App Check (lazy-loaded)
+  rateLimiter.ts      client-side request limiter
+  readFiles.ts        reads files two at a time, per-slot retry
+  uploadPipeline.ts   validation, EXIF stripping and downscaling before upload
   types.ts            shared types
 src/screens/        Landing, Scheme, Upload, Audit, Report, Ready (+ Modal, Ring, Confetti)
 src/                App, glue (api.ts), ErrorBoundary, Framer Motion helpers, styles.css
@@ -123,7 +135,7 @@ firebase.json       Hosting: public = dist, SPA rewrite, security headers
 
 ## Scheme packs
 
-A pack is one JSON file (`src/core/schemes/mahadbt-postmatric-obc.json`) validated with Zod when the app starts. It has `slots` (the documents, with names in en / mr / hi and the document types each slot accepts) and `rules`. Every rule has an `id`, a `type`, a `label`, a `severity`, `why` and `fix` text in three languages, a `source` (label, URL, kind), `verified`, and `usesAi`.
+A pack is one JSON file (`src/core/schemes/mahadbt-postmatric-obc.2025-26.json`) validated with Zod when the app starts. It has `slots` (the documents, with names in en / mr / hi and the document types each slot accepts) and `rules`. Every rule has an `id`, a `type`, a `label`, a `severity`, `why` and `fix` text in three languages, a `source` (label, URL, kind), `verified`, and `usesAi`.
 
 Supported rule types: `required_document`, `document_check`, `date_window`, `conditional`, `cross_document_match`, `field_consistency`, `numeric_max`.
 
@@ -161,7 +173,7 @@ Details in [SECURITY.md](SECURITY.md).
 
 Target: **WCAG 2.1 AA**.
 
-- Real buttons, labels and landmarks; keyboard-operable file inputs; focus returns to the opener when a dialog closes; Escape closes dialogs.
+- Real buttons, labels and landmarks; keyboard-operable file inputs; dialogs take focus, make the page behind them `inert`, trap Tab, close on Escape and return focus to the opener.
 - `aria-live` regions for audit progress, a `progressbar` role, severity shown as icon + word + colour.
 - **axe tests** (`vitest-axe`) run on every screen and both dialogs with no violations.
 - **Contrast** (computed from the palette): body text 9.3:1 to 17:1, muted text on white 5.9:1, status colours on their tints 4.84:1 to 7.3:1, white on indigo 7.9:1. The lowest pair is green on its tint at 4.84:1. jsdom cannot measure contrast, so this was computed separately and is not part of the automated suite.
@@ -173,12 +185,12 @@ Not done: a full screen-reader pass with NVDA / VoiceOver. axe catches structura
 
 ## Testing
 
-`npm test` runs **255 tests in 25 files** (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
+`npm test` runs **268 tests in 28 files** (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
 
 | Coverage | Statements | Branches | Functions | Lines |
 |---|---|---|---|---|
-| `src/core` (rules engine, extraction, masking, Firebase wrapper) | 98.7 % | 93.1 % | 96.6 % | 100 % |
-| Whole `src` | 91.2 % | 80.5 % | 88.0 % | 93.4 % |
+| `src/core` (rules engine, validation, masking, preview) | 99.6 % | 91.6 % | 100 % | 99.7 % |
+| Whole `src` | 95.5 % | 86.6 % | 94.5 % | 97.3 % |
 
 What is covered:
 
@@ -189,6 +201,8 @@ What is covered:
 - Multi-scheme selection between OBC and SC packs, locking sample mode to OBC.
 - File validation, magic-byte checks, canvas EXIF stripping & downscaling.
 - Aadhaar masking, Gemini retry-then-success, 429 backoff, rate limiter in `sessionStorage` and concurrency pool (2 reads at once).
+- Dialogs: focus moves in, background is `inert`, Tab wraps both ways, Escape and outside click close, focus returns to the opener; checklist print and text download.
+- Issue previews: the highlighted field for every rule with a preview.
 - UI: issues rendered, language toggle and `html lang`, skip link, screen-reader score descriptions, dialogs, printable checklist, reduced-motion path, ErrorBoundary.
 - Accessibility: axe on every screen with zero violations.
 
@@ -203,17 +217,17 @@ npm run typecheck
 
 ## Performance
 
-Vendor code is split so no chunk exceeds 500 KB (largest: 211 KB). The Firebase SDK is loaded only when someone uploads a file for live reading, so the sample flow never downloads it.
+Vendor code is split so no chunk exceeds 500 KB (largest: 216 KB). The Firebase SDK is loaded only when someone uploads a file for live reading, so the sample flow never downloads it.
 
 | Chunk | Raw | Gzip | Loaded |
 |---|---|---|---|
 | `react` | 210.5 KB | 65.7 KB | on start |
-| `framer-motion` | 161.3 KB | 54.2 KB | on start |
-| app (`index`) | 157.1 KB | 46.0 KB | on start |
+| `framer-motion` (`LazyMotion` + `domAnimation`, `m.*` components) | 96.5 KB | 34.4 KB | on start |
+| app (`index`, includes both scheme packs) | 215.5 KB | 58.9 KB | on start |
 | `firebase` (app + AI Logic + App Check) | 95.2 KB | 29.1 KB | lazy, live upload only |
-| CSS | 17.9 KB | 4.5 KB | on start |
+| CSS | 18.8 KB | 4.7 KB | on start |
 
-Initial JavaScript is about 530 KB raw / 166 KB gzip. I have not run Lighthouse or measured real-device load times.
+Initial JavaScript is about 523 KB raw / 159 KB gzip. `LazyMotion` cut the animation chunk by 40 %. I have not run Lighthouse or measured real-device load times.
 
 ## Run and deploy
 
@@ -247,14 +261,14 @@ The build tooling in this repository never deployed the site; the live link abov
 
 ## AI tools used and how I prompted
 
-- **Claude Code (Claude Sonnet 5.5)** wrote most of this codebase, tests and docs.
+- **Claude Code** wrote most of this codebase, tests and docs.
 - **Gemini** (through Firebase AI Logic) is used at runtime for document reading only.
 
 How the work was directed:
 
 1. **A fixed design as the contract.** A clickable prototype (`design/formsure-design.html`) was the visual and behavioural reference: port its CSS, copy and six screens exactly, replace the hard-coded data with real calls.
 2. **Principle first.** "Gemini reads, code decides" was stated up front and shaped the architecture: a rules engine with sources, a `verified` flag, and AI output that is only ever data.
-3. **Explicit fixtures and numbers.** The brief fixed the sample applicant, the three failures, 57 % and 100 %, and the rule order, so tests could pin them.
+3. **Explicit fixtures and numbers.** The brief fixed the sample applicant, its expected results (50 % with one issue, then 100 % after the fix) and the rule order, so tests could pin them.
 4. **Tests as gates.** Each part was committed only after lint, typecheck, tests and build passed.
 5. **Changing constraints.** The deployment target changed twice during the build (Cloud Run, then Cloud Functions, then a static site); the architecture was reworked each time, which is why the engine moved into `src/core`.
 
@@ -262,12 +276,12 @@ The prompt text is not reproduced here. Review the code, not the prompt: everyth
 
 ## Honest limitations
 
-- **Rules are not verified against the official scheme document.** They come from college notices and community guides, and each links to its source so a person can verify it.
-- **The income-limit rule is skipped** as unverified because sources conflict. Its limit in the pack is a placeholder that is never applied.
+- **Evidence & verification status:** The OBC income-limit rule is skipped because authoritative sources conflict (₹2.50L official portal vs ₹1.50L MIT notice vs ₹8L Tirpude notice) and remains disabled until reconciled. The SC scheme pack income limit is verified at ₹2,50,000 backed by the official MahaDBT portal and supporting notices. Both scheme packs are confirmed for academic year 2025-26.
+- **Visual document redaction is not implemented:** Text-level 12-digit number masking (`maskAadhaar`, `maskDeep`) is applied across all extracted model outputs, reports, logs, and filenames. However, pre-transmission visual redaction of scanned images or PDFs (such as drawing black bars over card numbers or QR codes) is not implemented; raw scans are sent to Gemini for OCR reading, stripped of image EXIF metadata only.
+- **Client-side rate limiter is a usability safeguard:** `sessionStorage` timestamps are scoped to a single tab and provide reload persistence within that tab only. Authoritative abuse prevention and quota enforcement relies on provider-side Firebase App Check (reCAPTCHA Enterprise) and Google Cloud project quotas.
 - **The live Gemini path has only been tested with mocks.** The App Check setup is mocked too. No Firebase project or key was used by the automated tests. Check the model name (`gemini-3.8-flash`) and the response schema against your own project before relying on it.
 - Extraction quality depends on scan quality, and transliteration-based name matching is a heuristic: it can pass a near-miss or flag a valid variant.
 - Documents are sent to Google's Gemini API for reading. "Nothing is stored" describes FormSure, not Google's own data handling for your project.
-- The UI loads one scheme pack; the other scheme cards are "coming soon".
 - **FormSure flags likely problems. It does not guarantee approval.** The decision rests with MahaDBT and the college.
 - Accessibility was checked with axe and a computed contrast table, not with real assistive-technology users.
 

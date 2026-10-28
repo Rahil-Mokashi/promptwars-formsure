@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { useMemo, useState } from 'react';
 import { ArrowIcon, FileIcon } from '../components/icons';
 import { fadeUp } from '../components/motionProps';
@@ -11,7 +11,7 @@ import { useReduce } from '../hooks/useMotion';
 
 const LIST_DELAY_S = 0.12;
 const LIST_STAGGER_S = 0.06;
-const KNOWN_YEARS = ['2026-27', '2025-26'] as const;
+const KNOWN_YEARS = ['2025-26', '2026-27'] as const;
 
 /** Props of {@link Scheme}. */
 export interface SchemeProps {
@@ -56,6 +56,9 @@ export function Scheme({ pack, packs, sampleMode, onSelectPack, lang, form, onFo
             <select id="yr" value={form.academicYear} onChange={set('academicYear')}>
               {years.map((y) => <option key={y}>{y}</option>)}
             </select>
+            <small className="slotnote" style={{ display: 'block', marginTop: 4 }}>
+              Evidence and rules are verified for AY {pack.academicYear}.
+            </small>
           </div>
           <div className="field">
             <label htmlFor="typ">Application type</label>
@@ -71,13 +74,13 @@ export function Scheme({ pack, packs, sampleMode, onSelectPack, lang, form, onFo
             {pack.slots.map((slot, i) => {
               const n = slotNames(slot, lang);
               return (
-                <motion.li key={slot.id} {...fadeUp(reduce, LIST_DELAY_S + i * LIST_STAGGER_S)}>
+                <m.li key={slot.id} {...fadeUp(reduce, LIST_DELAY_S + i * LIST_STAGGER_S)}>
                   <span className="dicon"><FileIcon size={16} /></span>
                   <span>
                     {n.name}
                     <span className="mr dev" lang={n.subLang}>{n.sub}</span>
                   </span>
-                </motion.li>
+                </m.li>
               );
             })}
           </ul>

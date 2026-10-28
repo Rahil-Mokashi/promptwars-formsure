@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import type { SchemePack } from '../../core/types';
 import { useReduce } from '../../hooks/useMotion';
 import { fadeUp } from '../motionProps';
@@ -48,7 +48,7 @@ export function SchemeCards({ packs, selectedId, sampleMode, onSelect, onOpenPac
         const locked = card.packId !== null && !selected && sampleMode;
         const live = card.packId !== null && !locked;
         return (
-          <motion.button
+          <m.button
             key={card.key}
             className={`scheme ${selected ? 'sel' : live || card.opens ? '' : 'off'}`}
             aria-pressed={card.packId !== null ? selected : false}
@@ -61,7 +61,7 @@ export function SchemeCards({ packs, selectedId, sampleMode, onSelect, onOpenPac
             <span className="sname">{card.name}</span>
             <span className="sportal">{card.portal}</span>
             <span className={`pill ${card.packId !== null ? 'pill-on' : 'pill-off'}`}>{locked ? 'Sample is OBC' : card.pill}</span>
-          </motion.button>
+          </m.button>
         );
       })}
     </div>

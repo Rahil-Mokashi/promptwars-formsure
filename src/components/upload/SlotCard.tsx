@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { maskAadhaar } from '../../core/mask';
 import { slotNames } from '../../core/slotNames';
 import type { Lang, SlotDef, SlotReadState } from '../../core/types';
@@ -36,7 +36,7 @@ export function SlotCard({ slot, index, lang, file, sampleFile, state, retrying,
   const shown = sampleFile ?? (file ? { name: maskAadhaar(file.name), size: sizeLabel(file.size) } : null);
 
   return (
-    <motion.div className="card slot" {...fadeUp(reduce, STAGGER_DELAY_S + index * STAGGER_STEP_S)}>
+    <m.div className="card slot" {...fadeUp(reduce, STAGGER_DELAY_S + index * STAGGER_STEP_S)}>
       <div className="slottop">
         <span className="dicon"><FileIcon size={16} /></span>
         <div>
@@ -65,6 +65,6 @@ export function SlotCard({ slot, index, lang, file, sampleFile, state, retrying,
           />
         </label>
       )}
-    </motion.div>
+    </m.div>
   );
 }

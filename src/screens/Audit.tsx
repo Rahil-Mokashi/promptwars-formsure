@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { CheckList } from '../components/audit/CheckList';
 import { JsonPanel } from '../components/audit/JsonPanel';
 import { ScanPaper } from '../components/audit/ScanPaper';
@@ -48,16 +48,16 @@ export function Audit({ pack, report, progress, docs, fileNames, sample, firstNa
         </div>
         {!reveal.done && report && <button className="btn btn-ghost" onClick={reveal.skip}>Skip animation</button>}
         {reveal.done && (
-          <motion.button className="btn btn-primary" onClick={onReport} {...fadeUp(reduce, 0, 0.5)}>
+          <m.button className="btn btn-primary" onClick={onReport} {...fadeUp(reduce, 0, 0.5)}>
             See readiness report<ArrowIcon />
-          </motion.button>
+          </m.button>
         )}
       </div>
       <div
         className="progress" role="progressbar" aria-label={reading ? 'Documents read' : 'Checks completed'} aria-valuemin={0}
         aria-valuemax={reading ? progress.total : reveal.total || DEFAULT_TOTAL} aria-valuenow={reading ? progress.index - 1 : reveal.step}
       >
-        <motion.div initial={false} animate={{ width: `${percent}%` }} transition={{ duration: reduce ? 0 : BAR_S, ease: EASE }} />
+        <m.div initial={false} animate={{ width: `${percent}%` }} transition={{ duration: reduce ? 0 : BAR_S, ease: EASE }} />
       </div>
       <div className="auditgrid">
         <div>

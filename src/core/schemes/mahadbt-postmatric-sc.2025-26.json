@@ -388,9 +388,9 @@
       "docField": "annualIncome",
       "max": 250000,
       "why": {
-        "en": "Two college notices say SC applicants’ annual family income must be ₹2,50,000 or less; above it the application may be sent back.",
-        "mr": "दोन महाविद्यालयीन सूचनांनुसार अनुसूचित जाती अर्जदारांचे वार्षिक कौटुंबिक उत्पन्न ₹२,५०,००० किंवा त्यापेक्षा कमी असावे; त्याहून जास्त असल्यास अर्ज परत पाठवला जाऊ शकतो.",
-        "hi": "दो कॉलेज सूचनाओं के अनुसार अनुसूचित जाति आवेदकों की वार्षिक पारिवारिक आय ₹2,50,000 या उससे कम होनी चाहिए; इससे अधिक होने पर आवेदन वापस भेजा जा सकता है।"
+        "en": "The official MahaDBT scheme page and two college notices confirm SC applicants’ annual family income must be ₹2,50,000 or less; above it the application may be sent back.",
+        "mr": "अधिकृत MahaDBT योजना पृष्ठ आणि दोन महाविद्यालयीन सूचनांनुसार अनुसूचित जाती अर्जदारांचे वार्षिक कौटुंबिक उत्पन्न ₹२,५०,००० किंवा त्यापेक्षा कमी असावे; त्याहून जास्त असल्यास अर्ज परत पाठवला जाऊ शकतो.",
+        "hi": "आधिकारिक MahaDBT योजना पृष्ठ और दो कॉलेज सूचनाओं के अनुसार अनुसूचित जाति आवेदकों की वार्षिक पारिवारिक आय ₹2,50,000 या उससे कम होनी चाहिए; इससे अधिक होने पर आवेदन वापस भेजा जा सकता है।"
       },
       "fix": {
         "en": "Check the annual income on your income certificate. If your family income is above ₹2,50,000, ask your college scholarship desk what applies to you.",
@@ -398,14 +398,20 @@
         "hi": "आय प्रमाणपत्र पर वार्षिक आय जांचें। परिवार की आय ₹2,50,000 से अधिक हो तो अपने कॉलेज के छात्रवृत्ति विभाग से पूछें।"
       },
       "source": {
-        "label": "College notice: MahaDBT Scholarship Application Process for 2025-26 (tirpude.edu.in)",
-        "url": "https://www.tirpude.edu.in/wp-content/uploads/2025/10/Notice-of-Scholarship-2025.pdf",
-        "kind": "college-notice"
+        "label": "MahaDBT scheme page: Government of India Post-Matric Scholarship for SC Students",
+        "url": "https://mahadbt.maharashtra.gov.in/SchemeData/SchemeData?str=E9DDFA703C38E51AA80D58C08A463388",
+        "kind": "official"
       },
       "usesAi": false,
       "version": "2.0.0",
       "status": "verified",
       "evidence": [
+        {
+          "label": "MahaDBT scheme page: Government of India Post-Matric Scholarship for SC Students",
+          "url": "https://mahadbt.maharashtra.gov.in/SchemeData/SchemeData?str=E9DDFA703C38E51AA80D58C08A463388",
+          "kind": "official",
+          "quote": "Income limit for SC student: Family annual income limit is Rs. 2,50,000/- or less."
+        },
         {
           "label": "College notice: MahaDBT Scholarship Application Process for 2025-26 (tirpude.edu.in)",
           "url": "https://www.tirpude.edu.in/wp-content/uploads/2025/10/Notice-of-Scholarship-2025.pdf",
