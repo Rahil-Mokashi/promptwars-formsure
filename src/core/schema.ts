@@ -31,7 +31,8 @@ const base = {
   severity: z.enum(['critical', 'warning']),
   why: trio,
   fix: trio,
-  source: z.object({ label: z.string(), url: z.string().url(), kind: z.string() }),
+  source: z.object({ label: z.string(), url: z.string().url(), kind: z.enum(['official', 'college-notice', 'secondary']) }),
+  version: z.string().regex(/^\d+\.\d+\.\d+$/),
   verified: z.boolean(),
   usesAi: z.boolean(),
   issueTitle: z.string(),
@@ -83,6 +84,8 @@ export const packSchema = z.object({
   id: z.string(),
   name: z.string(),
   portal: z.string(),
+  version: z.string().regex(/^\d+\.\d+\.\d+$/),
+  academicYear: z.string().regex(/^\d{4}-\d{2}$/),
   slots: z
     .array(z.object({ id: slotId, short: z.string(), label: trio, accepts: z.array(docType).min(1) }))
     .min(1),

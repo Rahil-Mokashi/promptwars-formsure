@@ -1,21 +1,17 @@
-import { motion } from 'framer-motion';
-import { NAME_MAX_LENGTH } from '../core/constants';
-import { maskAadhaar } from '../core/mask';
-import type { FormErrors } from '../hooks/useFlow';
+import { ArrowIcon } from '../components/icons';
+import { FormPanel } from '../components/upload/FormPanel';
+import { SlotCard } from '../components/upload/SlotCard';
 import type { ApplicationForm, Lang, SampleResponse, SchemePack, SlotId, SlotReadState } from '../core/types';
-import { ArrowIcon, FileIcon, Tick } from '../icons';
-import { fadeUp, useReduce } from '../motion';
-import { slotNames } from '../names';
+import type { FormErrors } from '../hooks/useFlow';
 
-const kb = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
-const dmy = (iso: string) => iso.split('-').reverse().join('/');
-
-interface Props {
-  pack: SchemePack | null;
+/** Props of {@link Upload}. */
+export interface UploadProps {
+  pack: SchemePack;
   lang: Lang;
-  sample: SampleResponse | null; // set in sample mode
+  /** Set in sample mode: files are the sample's and nothing can be edited. */
+  sample: SampleResponse | null;
   form: ApplicationForm;
-  onForm: (f: ApplicationForm) => void;
+  onForm: (form: ApplicationForm) => void;
   files: Partial<Record<SlotId, File>>;
   onFile: (slot: SlotId, file: File | undefined) => void;
   /** Per-slot reading / failed state from live reading. */
@@ -32,97 +28,35 @@ interface Props {
   onRun: () => void;
 }
 
-export function Upload({ pack, lang, sample, form, onForm, files, onFile, slotStates, retrying, onRetry, error, formErrors, validating, onBack, onRun }: Props) {
-  const reduce = useReduce();
-  const canRun = !validating && (sample !== null || (form.fullName.trim() !== '' && form.dateOfBirth !== '' && Object.keys(files).length > 0));
+/** Third screen: one file per slot, the form details, and the button that starts the check. */
+export function Upload(props: UploadProps) {
+  const { pack, lang, sample, form, files, slotStates, retrying, error, formErrors, validating } = props;
+  const ready = form.fullName.trim() !== '' && form.dateOfBirth !== '' && Object.keys(files).length > 0;
+  const canRun = !validating && (sample !== null || ready);
 
   return (
-    <main className="wrap page">
-      <h2 className="h2">Upload your documents</h2>
+    <main className="wrap page" id="main" tabIndex={-1}>
+      <h1 className="h2">Upload your documents</h1>
       <p className="sub">
         One file per slot, exactly as you will upload it on MahaDBT.
         {sample && ' Sample applicant: Aarav Patil.'}
       </p>
       <div className="grid2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))' }}>
         <div className="slots" style={{ gridColumn: 'span 2' }}>
-          {pack?.slots.map((slot, i) => {
-            const n = slotNames(slot, lang);
-            const file = files[slot.id];
-            const state = slotStates[slot.id];
-            const shown = sample ? sample.files[slot.id] : file ? { name: maskAadhaar(file.name), size: kb(file.size) } : null;
-            return (
-              <motion.div key={slot.id} className="card slot" {...fadeUp(reduce, 0.12 + i * 0.06)}>
-                <div className="slottop">
-                  <span className="dicon"><FileIcon size={16} /></span>
-                  <div>
-                    <div className="slotname">{n.name}</div>
-                    <div className="mr dev" lang={n.subLang} style={{ fontSize: 12, color: '#5B6478' }}>{n.sub}</div>
-                  </div>
-                </div>
-                <div className="file">
-                  <span className="mono">{shown?.name ?? 'No file chosen'}</span>
-                  <span>{shown?.size}</span>
-                </div>
-                {state && (
-                  <p className="slotnote" role="status" data-failed={state.status === 'failed'}>{state.message}</p>
-                )}
-                {state?.status === 'failed' && (
-                  <button className="btn btn-ghost btn-sm" onClick={() => onRetry(slot.id)} disabled={retrying}>Retry this file</button>
-                )}
-                {shown && !state && (
-                  <span className="ok"><Tick reduce={reduce} />Uploaded</span>
-                )}
-                {!sample && (
-                  <label className="btn btn-ghost btn-sm">
-                    {file ? 'Replace file' : 'Choose file'}
-                    <span className="sr-only"> for {slot.label.en}</span>
-                    <input
-                      className="sr-only"
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,application/pdf"
-                      onChange={(e) => onFile(slot.id, e.target.files?.[0])}
-                    />
-                  </label>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-        <section className="card panel" aria-labelledby="as-entered">
-          <p className="ptitle" id="as-entered">As entered on MahaDBT</p>
-          <p className="pdesc">FormSure compares these with every document.</p>
-          <div className="field">
-            <label htmlFor="nm">Full name</label>
-            <input
-              id="nm" value={form.fullName} readOnly={!!sample} maxLength={NAME_MAX_LENGTH} autoComplete="off"
-              aria-invalid={!!formErrors.fullName} aria-describedby={formErrors.fullName ? 'nm-err' : undefined}
-              onChange={(e) => onForm({ ...form, fullName: e.target.value })}
+          {pack.slots.map((slot, i) => (
+            <SlotCard
+              key={slot.id} slot={slot} index={i} lang={lang} file={files[slot.id]} sampleFile={sample?.files[slot.id]}
+              state={slotStates[slot.id]} retrying={retrying}
+              onFile={(file) => props.onFile(slot.id, file)} onRetry={() => props.onRetry(slot.id)}
             />
-            {formErrors.fullName && <p className="fielderr" id="nm-err">{formErrors.fullName}</p>}
-          </div>
-          <div className="field">
-            <label htmlFor="dob">Date of birth</label>
-            {sample ? (
-              <input id="dob" value={dmy(form.dateOfBirth)} readOnly />
-            ) : (
-              <input
-                id="dob" type="date" value={form.dateOfBirth} aria-invalid={!!formErrors.dateOfBirth}
-                aria-describedby={formErrors.dateOfBirth ? 'dob-err' : undefined}
-                onChange={(e) => onForm({ ...form, dateOfBirth: e.target.value })}
-              />
-            )}
-            {formErrors.dateOfBirth && <p className="fielderr" id="dob-err">{formErrors.dateOfBirth}</p>}
-          </div>
-          <div className="field">
-            <label htmlFor="cg">Category</label>
-            <input id="cg" value={form.category} readOnly />
-          </div>
-        </section>
+          ))}
+        </div>
+        <FormPanel form={form} errors={formErrors} readOnly={sample !== null} onForm={props.onForm} />
       </div>
       {error && <p className="errnote" role="alert">{error}</p>}
       <div className="actions">
-        <button className="btn btn-ghost" onClick={onBack}>Back</button>
-        <button className="btn btn-primary" onClick={onRun} disabled={!canRun}>
+        <button className="btn btn-ghost" onClick={props.onBack}>Back</button>
+        <button className="btn btn-primary" onClick={props.onRun} disabled={!canRun}>
           Run FormSure check<ArrowIcon />
         </button>
       </div>

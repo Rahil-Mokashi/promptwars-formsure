@@ -155,7 +155,7 @@ export function useFlow(): Flow {
     if (!sample) return go('upload');
     const fixed = audit(form, sample.fixedDocuments);
     setReport(fixed);
-    setScreen(fixed.failed === 0 ? 'ready' : 'report');
+    setScreen(fixed.failed === 0 && fixed.needsReview === 0 ? 'ready' : 'report');
   }, [form, go, sample]);
 
   const restart = useCallback(() => {

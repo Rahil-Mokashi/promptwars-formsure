@@ -22,14 +22,14 @@ describe('reduced-motion sample flow', () => {
     render(<App />);
     await toReport(user);
 
-    expect(await screen.findByRole('heading', { name: '3 things to fix before you submit' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Pre-check complete — 4 passed, 3 need fixing, 0 couldn’t be verified.' })).toBeInTheDocument();
     expect(screen.getAllByRole('article')).toHaveLength(3);
     // Count-up is skipped: the final number is there immediately.
     expect(screen.getByText('57%')).toBeInTheDocument();
-    expect(screen.getByText(/Skipped: family income limit/)).toBeInTheDocument();
+    expect(screen.getByText(/Not evaluated \(1\)/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /re-check/i }));
-    expect(await screen.findByRole('heading', { name: 'Ready to submit' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Pre-check complete' })).toBeInTheDocument();
     expect(screen.getByText('100%')).toBeInTheDocument();
     expect(document.querySelector('.confetti-canvas')).toBeNull(); // no confetti when motion is off
   });
@@ -49,7 +49,7 @@ describe('reduced-motion sample flow', () => {
     const user = userEvent.setup();
     render(<App />);
     await toReport(user);
-    await screen.findByRole('heading', { name: /things to fix/ });
+    await screen.findByRole('heading', { name: /Pre-check complete/ });
     await user.click(screen.getByRole('button', { name: 'मराठी' }));
     expect(document.documentElement.lang).toBe('mr');
     expect(screen.getByText(/तहसील कार्यालयातून १ एप्रिल/)).toBeInTheDocument();

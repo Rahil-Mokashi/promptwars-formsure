@@ -1,155 +1,165 @@
 import { describe, expect, it } from 'vitest';
-import type { DocumentsBySlot, ExtractedDocument } from './types';
-import { fyStartYear, phonetic, runAudit } from './engine';
-import { mahadbtPack, type Pack } from './schema';
-import { buildSample } from './sample';
-
-const NOW = new Date('2026-10-28T06:00:00Z');
-const sample = buildSample(NOW);
-const audit = (docs: DocumentsBySlot, now = NOW, pack: Pack = mahadbtPack, form = sample.form) =>
-  runAudit(pack, form, docs, now);
-const status = (r: ReturnType<typeof audit>, id: string) => r.checks.find((c) => c.ruleId === id)?.status;
-const doc = (o: Partial<ExtractedDocument>): ExtractedDocument => ({
-  documentTypes: [], language: 'en', applicantName: null, dateOfBirth: null, issueDate: null,
-  issuingAuthority: null, category: null, annualIncome: null, pageCount: 1, legible: true, ...o,
-});
+import { ALL_SLOTS, NOW, audit, checkOf, fixed, patchDoc, sample, statusOf, withoutDoc } from '../test/docs';
+import { assertNever } from './assertNever';
+import { fyLabel, fyStartYear, longDate } from './dates';
+import { mahadbtPack } from './schema';
 
 describe('sample fixtures', () => {
-  it('error fixture has exactly 3 failures and readiness 57', () => {
+  it('error set: exactly 3 failures and readiness 57', () => {
     const r = audit(sample.errorDocuments);
     expect(r.checks).toHaveLength(8);
-    expect(r.checks.filter((c) => c.status === 'fail').map((c) => c.ruleId)).toEqual([
-      'income-financial-year', 'income-ncl', 'name-match',
-    ]);
-    expect([r.passed, r.failed, r.skipped, r.readiness]).toEqual([4, 3, 1, 57]);
+    expect(r.checks.filter((c) => c.status === 'fail').map((c) => c.ruleId)).toEqual(['income-financial-year', 'income-ncl', 'name-match']);
+    expect([r.passed, r.failed, r.needsReview, r.notEvaluated, r.readiness]).toEqual([4, 3, 0, 1, 57]);
   });
 
-  it('fixed fixture has 0 failures and readiness 100', () => {
-    const r = audit(sample.fixedDocuments);
-    expect([r.passed, r.failed, r.skipped, r.readiness]).toEqual([7, 0, 1, 100]);
+  it('fixed set: 100% only because every evaluated rule passed', () => {
+    const r = audit(fixed);
+    expect([r.passed, r.failed, r.needsReview, r.notEvaluated, r.readiness]).toEqual([7, 0, 0, 1, 100]);
   });
 
-  it('produces the design copy for the failing checks', () => {
+  it('produces the evidence and wording the report shows', () => {
     const r = audit(sample.errorDocuments);
-    const by = (id: string) => r.checks.find((c) => c.ruleId === id)!;
-    expect(by('income-financial-year').detail).toBe('Issued 12 May 2025, FY 2025-26');
-    expect(by('income-financial-year').evidence?.found).toBe('Issued 12/05/2025 (FY 2025-26)');
-    expect(by('income-financial-year').evidence?.needed).toBe('Issued in FY 2026-27, on or after 1 April 2026');
-    expect(by('income-financial-year').fix.mr).toContain('१ एप्रिल २०२६');
-    expect(by('income-ncl').detail).toBe('1 page found, non-creamy layer page missing');
-    expect(by('income-ncl').evidence?.found).toBe('1 page: income certificate only');
-    expect(by('name-match').detail).toBe('Marksheet says Arav, not Aarav');
-    expect(by('name-match').evidence).toMatchObject({
-      foundLabel: 'Marksheet',
-      found: 'Arav Sunil Patil',
-      neededLabel: 'Income certificate (Marathi) and form',
-      needed: 'आरव सुनील पाटील → Aarav Sunil Patil',
+    expect(checkOf(r, 'income-financial-year').detail).toBe('Issued 12 May 2025, FY 2025-26');
+    expect(checkOf(r, 'income-financial-year').evidence).toMatchObject({ document: 'Income certificate', field: 'issueDate', found: 'Issued 12/05/2025 (FY 2025-26)', needed: 'Issued in FY 2026-27, on or after 1 April 2026' });
+    expect(checkOf(r, 'income-financial-year').fix.mr).toContain('१ एप्रिल २०२६');
+    expect(checkOf(r, 'income-ncl').detail).toBe('1 page found, non-creamy layer page missing');
+    expect(checkOf(r, 'name-match').detail).toBe('Marksheet says Arav, not Aarav');
+    expect(checkOf(r, 'name-match').evidence).toMatchObject({
+      document: 'Marksheet', field: 'applicantName', foundLabel: 'Marksheet', found: 'Arav Sunil Patil',
+      neededLabel: 'Income certificate (Marathi) and form', needed: 'आरव सुनील पाटील → Aarav Sunil Patil',
     });
   });
-});
 
-describe('required_document', () => {
-  it('fails and names the missing slot', () => {
-    const { bank_passbook: _omit, ...rest } = sample.fixedDocuments;
-    void _omit;
-    const r = audit(rest);
-    expect(status(r, 'required-documents')).toBe('fail');
-    expect(r.checks[0]?.detail).toBe('Missing: Bank passbook');
+  it('every result carries rule id, rule version, academic year and source', () => {
+    for (const c of audit(sample.errorDocuments).checks) {
+      expect(c.ruleId).toMatch(/\S/);
+      expect(c.ruleVersion).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(c.academicYear).toBe(mahadbtPack.academicYear);
+      expect(c.source.url).toMatch(/^https:\/\//);
+      expect(['official', 'college-notice', 'secondary']).toContain(c.source.kind);
+    }
+  });
+
+  it('every failing result names its document and field', () => {
+    for (const c of audit(sample.errorDocuments).checks.filter((x) => x.status === 'fail')) {
+      expect(c.evidence?.document).toMatch(/\S/);
+      expect(c.evidence?.field).toMatch(/\S/);
+    }
   });
 });
 
-describe('document_check', () => {
-  it('fails when a slot holds the wrong document type', () => {
-    const r = audit({ ...sample.fixedDocuments, marksheet: doc({ documentTypes: ['aadhaar'] }) });
-    expect(status(r, 'right-document')).toBe('fail');
+describe('no false passes: anything that cannot be verified needs review', () => {
+  it('a missing document fails the required-documents rule and every rule that needed it needs review', () => {
+    const docs = withoutDoc(fixed, 'caste_certificate');
+    expect(statusOf(docs, 'required-documents')).toBe('fail');
+    expect(statusOf(docs, 'category-match')).toBe('needs_review');
+    expect(statusOf(docs, 'name-match')).toBe('needs_review');
   });
-  it('fails when a document is not legible', () => {
-    const r = audit({ ...sample.fixedDocuments, domicile: { ...sample.fixedDocuments.domicile!, legible: false } });
-    expect(status(r, 'right-document')).toBe('fail');
+
+  it('a document that is not legible makes each rule reading it need review, and readiness drops', () => {
+    const docs = patchDoc(fixed, 'income_certificate', { legible: false });
+    for (const id of ['income-financial-year', 'income-ncl', 'right-document', 'name-match']) expect(statusOf(docs, id)).toBe('needs_review');
+    expect(audit(docs).readiness).toBeLessThan(100);
+  });
+
+  it('readiness counts needs_review against the score and is 100 only when every evaluated rule passes', () => {
+    const docs = patchDoc(fixed, 'aadhaar', { dateOfBirth: null });
+    const r = audit(docs);
+    expect(checkOf(r, 'dob-match').status).toBe('needs_review');
+    expect([r.passed, r.failed, r.needsReview, r.readiness]).toEqual([6, 0, 1, 86]);
+  });
+
+  it('a field the model could not read (null) needs review rather than failing or passing', () => {
+    expect(statusOf(patchDoc(fixed, 'income_certificate', { issueDate: null }), 'income-financial-year')).toBe('needs_review');
+    expect(statusOf(patchDoc(fixed, 'caste_certificate', { category: null }), 'category-match')).toBe('needs_review');
+    expect(statusOf(patchDoc(fixed, 'aadhaar', { dateOfBirth: null }), 'dob-match')).toBe('needs_review');
+  });
+
+  it('an unverified rule is not evaluated, even when the data would fail it', () => {
+    const r = audit(patchDoc(fixed, 'income_certificate', { annualIncome: 9_000_000 }));
+    expect(checkOf(r, 'income-limit').status).toBe('not_evaluated');
+    expect(r.failed).toBe(0);
+  });
+});
+
+describe('required_document and document_check', () => {
+  it('names every missing document', () => {
+    const docs = withoutDoc(withoutDoc(fixed, 'aadhaar'), 'marksheet');
+    expect(checkOf(audit(docs), 'required-documents').detail).toBe('Missing: Aadhaar, Marksheet');
+  });
+  it('fails on the wrong kind of document in a slot', () => {
+    const docs = patchDoc(fixed, 'marksheet', { documentTypes: ['aadhaar'] });
+    expect(statusOf(docs, 'right-document')).toBe('fail');
+  });
+  it('needs review when nothing could be recognised in a file', () => {
+    expect(statusOf(patchDoc(fixed, 'domicile', { documentTypes: [] }), 'right-document')).toBe('needs_review');
+  });
+  it('is not evaluated when no document was uploaded at all', () => {
+    expect(statusOf({}, 'right-document')).toBe('not_evaluated');
   });
 });
 
 describe('date_window (Indian financial year)', () => {
-  const withIssue = (issueDate: string, now: string) =>
-    audit({ ...sample.fixedDocuments, income_certificate: { ...sample.fixedDocuments.income_certificate!, issueDate } }, new Date(now));
+  const issuedOn = (issueDate: string, now: string) =>
+    checkOf(audit(patchDoc(fixed, 'income_certificate', { issueDate }), sample.form, new Date(now)), 'income-financial-year').status;
 
-  it('31 March belongs to the old financial year', () => {
+  it('31 March belongs to the old financial year, 1 April starts the new one', () => {
     expect(fyStartYear('2026-03-31')).toBe(2025);
     expect(fyStartYear('2026-04-01')).toBe(2026);
+    expect(fyLabel(2026)).toBe('2026-27');
   });
-  it('certificate issued 31 March fails on 1 April', () => {
-    expect(status(withIssue('2026-03-31', '2026-04-01T06:00:00Z'), 'income-financial-year')).toBe('fail');
+  it('certificate issued 31 March fails on 1 April, passes on 31 March', () => {
+    expect(issuedOn('2026-03-31', '2026-04-01T06:00:00Z')).toBe('fail');
+    expect(issuedOn('2026-03-31', '2026-03-31T06:00:00Z')).toBe('pass');
   });
   it('certificate issued 1 April passes on 1 April', () => {
-    expect(status(withIssue('2026-04-01', '2026-04-01T06:00:00Z'), 'income-financial-year')).toBe('pass');
-  });
-  it('certificate issued 31 March passes on 31 March', () => {
-    expect(status(withIssue('2026-03-31', '2026-03-31T06:00:00Z'), 'income-financial-year')).toBe('pass');
+    expect(issuedOn('2026-04-01', '2026-04-01T06:00:00Z')).toBe('pass');
   });
   it('uses India time: 20:00 UTC on 31 March is already 1 April in IST', () => {
-    expect(status(withIssue('2026-03-31', '2026-03-31T20:00:00Z'), 'income-financial-year')).toBe('fail');
+    expect(issuedOn('2026-03-31', '2026-03-31T20:00:00Z')).toBe('fail');
   });
-  it('fails when no issue date was read', () => {
-    const r = audit({ ...sample.fixedDocuments, income_certificate: { ...sample.fixedDocuments.income_certificate!, issueDate: null } });
-    expect(status(r, 'income-financial-year')).toBe('fail');
-  });
-});
-
-describe('conditional', () => {
-  it('is skipped for a category outside OBC/SBC/VJNT', () => {
-    const r = audit(sample.errorDocuments, NOW, mahadbtPack, { ...sample.form, category: 'Open' });
-    expect(status(r, 'income-ncl')).toBe('skipped');
+  it('formats dates for the report', () => {
+    expect(longDate('2025-05-12')).toBe('12 May 2025');
   });
 });
 
-describe('cross_document_match', () => {
-  it('Marathi document passes via the phonetic key', () => {
-    expect(phonetic('Aarav Sunil Patil')).toBe(phonetic('Arav Sunil Patil'));
-    expect(status(audit(sample.fixedDocuments), 'name-match')).toBe('pass');
+describe('conditional (income + non-creamy layer)', () => {
+  it('is not evaluated for a category outside OBC / SBC / VJNT', () => {
+    expect(statusOf(sample.errorDocuments, 'income-ncl', { ...sample.form, category: 'Open' })).toBe('not_evaluated');
   });
-  it('English document must match exactly (case and spaces normalised)', () => {
-    const named = (english: string) =>
-      audit({ ...sample.fixedDocuments, marksheet: doc({ documentTypes: ['marksheet'], applicantName: { original: english, english } }) });
-    expect(status(named('  AARAV   sunil patil '), 'name-match')).toBe('pass');
-    expect(status(named('Arav Sunil Patil'), 'name-match')).toBe('fail');
-  });
-  it('a Marathi document with a really different name still fails', () => {
-    const r = audit({
-      ...sample.fixedDocuments,
-      income_certificate: { ...sample.fixedDocuments.income_certificate!, applicantName: { original: 'x', english: 'Rohan Sunil Patil' } },
-    });
-    expect(status(r, 'name-match')).toBe('fail');
+  it('says there is no matching certificate when nothing was recognised in the file', () => {
+    const docs = patchDoc(fixed, 'income_certificate', { documentTypes: ['other'] });
+    expect(checkOf(audit(docs), 'income-ncl').evidence?.found).toBe('2 pages: no matching certificate');
   });
 });
 
 describe('field_consistency', () => {
-  it('fails on a different date of birth', () => {
-    const r = audit({ ...sample.fixedDocuments, aadhaar: { ...sample.fixedDocuments.aadhaar!, dateOfBirth: '2006-03-15' } });
-    expect(status(r, 'dob-match')).toBe('fail');
+  it('fails on a different date of birth or category', () => {
+    expect(statusOf(patchDoc(fixed, 'aadhaar', { dateOfBirth: '2006-03-15' }), 'dob-match')).toBe('fail');
+    expect(statusOf(patchDoc(fixed, 'caste_certificate', { category: 'SBC' }), 'category-match')).toBe('fail');
   });
-  it('fails on a different category', () => {
-    const r = audit({ ...sample.fixedDocuments, caste_certificate: { ...sample.fixedDocuments.caste_certificate!, category: 'SBC' } });
-    expect(status(r, 'category-match')).toBe('fail');
+  it('compares categories ignoring case', () => {
+    expect(statusOf(patchDoc(fixed, 'caste_certificate', { category: ' obc ' }), 'category-match')).toBe('pass');
   });
 });
 
-describe('numeric_max and unverified rules', () => {
-  const income = (annualIncome: number) => ({
-    ...sample.fixedDocuments,
-    income_certificate: { ...sample.fixedDocuments.income_certificate!, annualIncome },
-  });
-  const verified: Pack = {
-    ...mahadbtPack,
-    rules: mahadbtPack.rules.map((r) => (r.id === 'income-limit' ? { ...r, verified: true } : r)),
-  };
+describe('numeric_max (when a verified rule applies it)', () => {
+  const verified = { ...mahadbtPack, rules: mahadbtPack.rules.map((r) => (r.id === 'income-limit' ? { ...r, verified: true } : r)) };
+  const statusFor = (annualIncome: number | null) => checkOf(audit(patchDoc(fixed, 'income_certificate', { annualIncome }), sample.form, NOW, verified), 'income-limit').status;
 
-  it('unverified rule is skipped even when the data would fail it', () => {
-    const r = audit(income(9_000_000));
-    expect(status(r, 'income-limit')).toBe('skipped');
-    expect(r.failed).toBe(0);
+  it('passes at the maximum, fails above it, needs review when unreadable', () => {
+    expect(statusFor(800_000)).toBe('pass');
+    expect(statusFor(9_000_000)).toBe('fail');
+    expect(statusFor(null)).toBe('needs_review');
   });
-  it('verified rule applies the maximum', () => {
-    expect(status(audit(income(9_000_000), NOW, verified), 'income-limit')).toBe('fail');
-    expect(status(audit(income(800_000), NOW, verified), 'income-limit')).toBe('pass');
+});
+
+describe('exhaustiveness', () => {
+  it('throws on a rule type the dispatcher does not know', () => {
+    expect(() => assertNever('mystery' as never)).toThrow('Unexpected value: "mystery"');
+  });
+  it('the shipped pack has all seven slots covered by the name rule', () => {
+    const nameRule = mahadbtPack.rules.find((r) => r.type === 'cross_document_match');
+    expect(nameRule && 'slots' in nameRule ? [...nameRule.slots].sort() : []).toEqual([...ALL_SLOTS].sort());
   });
 });

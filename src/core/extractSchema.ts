@@ -1,8 +1,10 @@
 import './zodConfig';
 import { z } from 'zod';
+import { isRealDate } from './dates';
 import type { ExtractedDocument } from './types';
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+/** A real calendar date: `2026-99-99` and `2025-02-29` are rejected, which makes the field null (needs review). */
+const isoDate = z.string().refine(isRealDate);
 
 const DOCUMENT_TYPES = [
   'aadhaar', 'caste_certificate', 'income_certificate', 'non_creamy_layer',

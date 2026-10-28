@@ -1,5 +1,5 @@
 import type { ApplicationForm, DocumentsBySlot, ExtractedDocument, SampleResponse } from './types';
-import { fyStartYear, istDate } from './engine';
+import { fyStartYear, istDate } from './dates';
 
 // Fictional applicant. Dates follow the current Indian financial year so the
 // sample keeps behaving the same way as the calendar moves on.

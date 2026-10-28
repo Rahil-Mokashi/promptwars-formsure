@@ -4,9 +4,10 @@ import { maskAadhaar } from './core/mask';
 import type { SlotId } from './core/types';
 import { pack } from './services/api';
 import { useFlow, type Flow } from './hooks/useFlow';
-import { EASE, useReduce } from './motion';
+import { EASE } from './components/motionProps';
+import { useReduce } from './hooks/useMotion';
 import { Audit } from './screens/Audit';
-import { Header } from './screens/Header';
+import { Header } from './components/Header';
 import { Landing } from './screens/Landing';
 import { Ready } from './screens/Ready';
 import { Report } from './screens/Report';
@@ -44,7 +45,7 @@ function currentScreen(flow: Flow): ReactNode {
         <Audit
           key={flow.runId} pack={pack} report={report} progress={flow.reader.progress} docs={flow.docs}
           fileNames={fileNamesOf(flow)} sample={!!flow.sample} firstName={flow.form.fullName.trim().split(/\s+/)[0] ?? ''}
-          onReport={() => flow.go(report && report.failed === 0 ? 'ready' : 'report')}
+          onReport={() => flow.go(report && report.failed === 0 && report.needsReview === 0 ? 'ready' : 'report')}
         />
       );
     case 'report':

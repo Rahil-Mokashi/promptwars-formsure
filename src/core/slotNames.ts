@@ -1,4 +1,4 @@
-import type { Lang, SlotDef } from './core/types';
+import type { Lang, SlotDef } from './types';
 
 /** Primary name in the chosen language, secondary line in another (the design shows Marathi under English). */
 export function slotNames(slot: SlotDef, lang: Lang): { name: string; subLang: Lang; sub: string } {

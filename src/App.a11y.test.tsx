@@ -42,11 +42,11 @@ describe('axe: no accessibility violations on any screen', () => {
     expect(await axe(container)).toHaveNoViolations();
 
     await clickWhenReady(user, /^Critical/i).catch(() => undefined);
-    await screen.findByRole('heading', { name: /things to fix/ });
+    await screen.findByRole('heading', { name: /Pre-check complete/ });
     expect(await axe(container)).toHaveNoViolations();
 
     await click(user, /re-check/i);
-    await screen.findByRole('heading', { name: 'Ready to submit' });
+    await screen.findByRole('heading', { name: 'Pre-check complete' });
     expect(await axe(container)).toHaveNoViolations();
 
     await click(user, /download checklist/i);

@@ -1,24 +1,27 @@
-import type { Lang } from '../core/types';
 import type { Screen } from '../hooks/useFlow';
-import { ShieldIcon } from '../icons';
-
+import type { Lang } from '../core/types';
+import { ShieldIcon } from './icons';
 
 const STEP_OF: Partial<Record<Screen, number>> = { scheme: 1, upload: 2, audit: 3, report: 4, ready: 4 };
-const STEPS = ['Scheme', 'Upload', 'Check', 'Report'];
-export const LANGS: { code: Lang; label: string; name: string }[] = [
+const STEPS = ['Scheme', 'Upload', 'Check', 'Report'] as const;
+
+/** The three languages for fixes: code, button label and English name. */
+export const LANGS: readonly { code: Lang; label: string; name: string }[] = [
   { code: 'en', label: 'EN', name: 'English' },
   { code: 'mr', label: 'मराठी', name: 'Marathi' },
   { code: 'hi', label: 'हिंदी', name: 'Hindi' },
 ];
 
-interface Props {
+/** Props of {@link Header}. */
+export interface HeaderProps {
   screen: Screen;
   lang: Lang;
-  onLang: (l: Lang) => void;
+  onLang: (lang: Lang) => void;
   onHome: () => void;
 }
 
-export function Header({ screen, lang, onLang, onHome }: Props) {
+/** Sticky glass header: brand, progress steps (after the landing page) and the language toggle. */
+export function Header({ screen, lang, onLang, onHome }: HeaderProps) {
   const current = STEP_OF[screen] ?? 0;
   return (
     <header className="top">

@@ -12,7 +12,7 @@ async function toReady(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: /continue to upload/i }));
   await user.click(await screen.findByRole('button', { name: /run formsure check/i }));
   await user.click(await screen.findByRole('button', { name: /see readiness report/i }));
-  await screen.findByRole('heading', { name: /things to fix/ });
+  await screen.findByRole('heading', { name: /Pre-check complete/ });
 }
 
 describe('landing', () => {

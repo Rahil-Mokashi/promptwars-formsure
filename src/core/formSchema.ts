@@ -1,6 +1,7 @@
 import './zodConfig';
 import { z } from 'zod';
 import { FIRST_BIRTH_YEAR, NAME_MAX_LENGTH } from './constants';
+import { isRealDate } from './dates';
 import type { ApplicationForm } from './types';
 
 /** Categories this scheme accepts. */
@@ -11,7 +12,7 @@ export const APPLICATION_TYPES = ['Fresh', 'Renewal'] as const;
 const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter the date of birth as day, month and year.')
-  .refine((s) => !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s), 'Enter a real date.')
+  .refine(isRealDate, 'Enter a real date.')
   .refine((s) => Number(s.slice(0, 4)) >= FIRST_BIRTH_YEAR, `Enter a date of birth from ${FIRST_BIRTH_YEAR} or later.`);
 
 /** Letters in any script, combining marks, spaces and the punctuation names use. */
