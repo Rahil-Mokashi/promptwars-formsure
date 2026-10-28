@@ -8,3 +8,5 @@ coverage
 .firebase
 firebase-debug.log
 *.log
+test-results
+playwright-report

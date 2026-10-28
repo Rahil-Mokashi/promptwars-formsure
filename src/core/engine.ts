@@ -18,10 +18,14 @@ const fillFix = (fix: Trio, year: string): Trio => ({ en: fillYear(fix.en, 'en',
 const skipReason = (rule: Rule): string =>
   rule.status === 'conflicting' ? 'Sources conflict, rule skipped' : 'Rule not verified yet, skipped';
 
+/** A pending rule (secondary sources only) still runs, as an advisory warning that never affects the score. */
+const isAdvisory = (rule: Rule): boolean => !isEvaluable(rule) && rule.status === 'pending';
+
 /**
  * Checks an application against a scheme pack.
- * Only rules that are verified by an official source or a college notice are applied; the rest are not evaluated. Readiness counts passes against failures and checks that
- * need review, so it is 100 only when every evaluated rule passed.
+ * Only rules that are verified by an official source or a college notice count towards readiness. Pending rules
+ * (secondary sources only) run as advisory warnings that are shown but never scored; conflicting rules are skipped.
+ * Readiness counts passes against failures and checks that need review, so it is 100 only when every scored rule passed.
  * @param now used to decide which Indian financial year is current
  * @returns readiness (`passed ÷ (passed + failed + needing review) × 100`, rounded) and every check with evidence, why, fix and source
  */
@@ -31,7 +35,8 @@ export function runAudit(pack: Pack, form: ApplicationForm, documents: Documents
   const ctx: RuleContext = { pack, form, docs: documents, today };
 
   const checks: Check[] = pack.rules.map((rule) => {
-    const outcome: Outcome = isEvaluable(rule) ? evaluateRule(rule, ctx) : notEvaluated(skipReason(rule));
+    const advisory = isAdvisory(rule);
+    const outcome: Outcome = isEvaluable(rule) || advisory ? evaluateRule(rule, ctx) : notEvaluated(skipReason(rule));
     return {
       ruleId: rule.id,
       label: rule.label,
@@ -47,10 +52,12 @@ export function runAudit(pack: Pack, form: ApplicationForm, documents: Documents
       issueDoc: rule.issueDoc,
       ruleVersion: rule.version,
       academicYear: pack.academicYear,
+      advisory,
     };
   });
 
-  const count = (status: Check['status']): number => checks.filter((c) => c.status === status).length;
+  const scored = checks.filter((c) => !c.advisory);
+  const count = (status: Check['status'], from: readonly Check[] = scored): number => from.filter((c) => c.status === status).length;
   const passed = count('pass');
   const failed = count('fail');
   const needsReview = count('needs_review');
@@ -61,6 +68,7 @@ export function runAudit(pack: Pack, form: ApplicationForm, documents: Documents
     passed,
     failed,
     needsReview,
-    notEvaluated: count('not_evaluated'),
+    notEvaluated: count('not_evaluated', checks),
+    advisories: checks.filter((c) => c.advisory && (c.status === 'fail' || c.status === 'needs_review')).length,
   };
 }

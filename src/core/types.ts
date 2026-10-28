@@ -130,6 +130,11 @@ export interface Check {
   source: Source;
   issueTitle: string;
   issueDoc: string;
+  /**
+   * True for a warning from a rule whose sources are not yet official (`pending`): it is evaluated and shown so the
+   * student can check it, but it never counts towards readiness or the passed / failed / needs-review totals.
+   */
+  advisory: boolean;
 }
 
 /** The whole report: readiness and every check. */
@@ -143,6 +148,8 @@ export interface AuditReport {
   needsReview: number;
   /** Rules that were not applied (unverified, conflicting sources, or not applicable). */
   notEvaluated: number;
+  /** Advisory checks (pending rules) that did not pass: worth checking by hand, never counted in readiness. */
+  advisories: number;
 }
 
 /** The fictional sample applicant, with an error set and a fixed set of documents. */

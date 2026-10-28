@@ -65,6 +65,7 @@ export function CheckList({ report, step, progress, reduce }: CheckListProps) {
                 <div className="clabel">
                   {c.label}
                   {c.usesAi && <span className="ctag">AI</span>}
+                  {c.advisory && <span className="ctag">Advisory</span>}
                   <span className="sr-only">{SPOKEN[state]}</span>
                 </div>
                 <div className="cdetail">{state === 'pending' ? 'Waiting' : state === 'running' ? 'Checking…' : c.detail}</div>

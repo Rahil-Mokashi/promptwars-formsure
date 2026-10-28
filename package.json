@@ -14,7 +14,8 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test:coverage": "vitest run --coverage",
-    "rules:register": "node scripts/update-register.mjs"
+    "rules:register": "node scripts/update-register.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "firebase": "^13.1.0",
@@ -24,7 +25,9 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",

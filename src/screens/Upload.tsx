@@ -61,9 +61,15 @@ export function Upload(props: UploadProps) {
       </div>
       {!sample && liveAvailable && (
         <label className="consent">
-          <input type="checkbox" checked={consent} onChange={(e) => props.onConsent(e.target.checked)} />
+          <input type="checkbox" checked={consent} aria-describedby="privacy-note" onChange={(e) => props.onConsent(e.target.checked)} />
           <span>Your documents are sent to Google Gemini via Firebase only to read them. Nothing is stored.</span>
         </label>
+      )}
+      {!sample && liveAvailable && (
+        <p className="slotnote privacynote" id="privacy-note">
+          <b>Privacy tip:</b> the whole scan is sent, including your Aadhaar number and QR code. FormSure only needs the name and date of
+          birth, so you can cover the first 8 digits of the Aadhaar number and the QR code before uploading. Any 12-digit number FormSure shows back is masked as XXXX XXXX 1234.
+        </p>
       )}
       {!sample && !liveAvailable && <p className="errnote" role="status">{UNAVAILABLE_MESSAGE}</p>}
       {error && <p className="errnote" role="alert">{error}</p>}

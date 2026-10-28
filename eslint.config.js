@@ -5,11 +5,11 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage', 'design'] },
+  { ignores: ['dist', 'node_modules', 'coverage', 'design', 'test-results', 'playwright-report'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['vitest.config.ts', 'vite.config.ts', 'eslint.config.js', 'scripts/**/*.mjs'],
+    files: ['vitest.config.ts', 'vite.config.ts', 'playwright.config.ts', 'eslint.config.js', 'scripts/**/*.mjs', 'e2e/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
   {

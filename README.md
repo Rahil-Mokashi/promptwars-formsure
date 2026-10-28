@@ -63,24 +63,28 @@ flowchart LR
 4. The rules engine runs over the extracted JSON. `readiness = passed ÷ applied checks × 100`; skipped rules are not counted.
 5. The report shows each issue with the evidence found, why it matters, the fix in the chosen language, a mini preview of the document with the problem field highlighted, and a link to the source of the rule.
 
-**Try sample applicant** runs the same engine on fictional data with no network and no Firebase config: **50 %** with 1 issue (income + non-creamy layer merged PDF), then **100 %** after "I've fixed these, re-check" (under evidence-gated rules where only verified rules with official or college-notice evidence are evaluated).
+**Try sample applicant** runs the same engine on fictional data with no network and no Firebase config: **50 %** with 1 scored issue (income + non-creamy layer merged PDF) plus 1 advisory warning (the marksheet says *Arav*, the form says *Aarav*), then **100 %** after "I've fixed these, re-check" (under evidence-gated rules where only verified rules with official or college-notice evidence are evaluated).
 
 ## The 8 rules
 
-Each rule carries a register status. **Only `verified` rules are applied**; `pending` (secondary sources only) and `conflicting` (sources disagree) rules are shown in the report as *not evaluated*, never guessed. This table matches the shipped JSON packs exactly (`npm run rules:register` regenerates [RULES.md](RULES.md) from them).
+Each rule carries a register status:
+
+- **`verified`** (official source or college notice): applied and **scored**.
+- **`pending`** (secondary sources only): still run, but as an **advisory warning**. The student sees the result ("Check manually: name on marksheet"), but it never changes the readiness score or the pass/fail totals.
+- **`conflicting`** (sources disagree): skipped and shown as *not evaluated*, never guessed. This table matches the shipped JSON packs exactly (`npm run rules:register` regenerates [RULES.md](RULES.md) from them).
 
 | # | Rule | Checked by | OBC pack | SC pack |
 |---|------|------------|----------|---------|
 | 1 | Required documents present | Code | conflicting: skipped | conflicting: skipped |
-| 2 | Right document in each slot | AI reads, code decides | **verified: applied** | pending: skipped |
+| 2 | Right document in each slot | AI reads, code decides | **verified: scored** | pending: advisory |
 | 3 | Income certificate issued in the current Indian financial year (1 Apr – 31 Mar, IST) | Code | conflicting: skipped | conflicting: skipped |
-| 4 | OBC / SBC / VJNT: income slot holds income certificate **and** non-creamy layer | AI reads, code decides | **verified: applied** | n/a |
-| 5 | Name matches the form across Aadhaar, income certificate, marksheet | AI reads, code decides | pending: skipped | pending: skipped |
-| 6 | Date of birth matches Aadhaar | Code | pending: skipped | pending: skipped |
-| 7 | Category matches caste certificate | Code | pending: skipped | pending: skipped |
-| 8 | Family income within limit | Code | conflicting: skipped | **verified: applied** (₹2,50,000) |
+| 4 | OBC / SBC / VJNT: income slot holds income certificate **and** non-creamy layer | AI reads, code decides | **verified: scored** | n/a |
+| 5 | Name matches the form across Aadhaar, income certificate, marksheet | AI reads, code decides | pending: advisory | pending: advisory |
+| 6 | Date of birth matches Aadhaar | Code | pending: advisory | pending: advisory |
+| 7 | Category matches caste certificate | Code | pending: advisory | pending: advisory |
+| 8 | Family income within limit | Code | conflicting: skipped | **verified: scored** (₹2,50,000) |
 
-Every rule type is implemented and fully tested (`src/core/engine.test.ts` runs all of them with a test pack that marks them verified). Turning a rule on is a data change, not a code change: set `status: "verified"` once an official source or college notice backs it.
+Every rule type is implemented and fully tested (`src/core/engine.test.ts` runs all of them with a test pack that marks them verified). Promoting a rule from advisory to scored is a data change, not a code change: set `status: "verified"` once an official source or college notice backs it.
 
 "AI reads, code decides" means Gemini supplies the extracted field (document types, transliterated name); the verdict is still computed by code.
 
@@ -176,7 +180,7 @@ Target: **WCAG 2.1 AA**.
 - Real buttons, labels and landmarks; keyboard-operable file inputs; dialogs take focus, make the page behind them `inert`, trap Tab, close on Escape and return focus to the opener.
 - `aria-live` regions for audit progress, a `progressbar` role, severity shown as icon + word + colour.
 - **axe tests** (`vitest-axe`) run on every screen and both dialogs with no violations.
-- **Contrast** (computed from the palette): body text 9.3:1 to 17:1, muted text on white 5.9:1, status colours on their tints 4.84:1 to 7.3:1, white on indigo 7.9:1. The lowest pair is green on its tint at 4.84:1. jsdom cannot measure contrast, so this was computed separately and is not part of the automated suite.
+- **Contrast** (computed from the palette): body text 9.3:1 to 17:1, muted text on white 5.9:1, status colours on their tints 4.84:1 to 7.3:1, white on indigo 7.9:1. The lowest pair is green on its tint at 4.84:1. jsdom cannot measure contrast, so the Playwright suite checks it in a real browser.
 - **Reduced motion.** `useReducedMotion` turns off every Framer Motion animation and the CSS transitions: results appear immediately, no confetti, no ambient drift.
 - **Three languages.** EN / मराठी / हिंदी toggle changes fixes, "why it matters" and document names, and sets `<html lang>`; Marathi and Hindi fragments carry their own `lang`.
 - Works at phone width: one compact header row, step numbers only below 640 px; verified with no horizontal overflow at 390 px.
@@ -185,7 +189,7 @@ Not done: a full screen-reader pass with NVDA / VoiceOver. axe catches structura
 
 ## Testing
 
-`npm test` runs **268 tests in 28 files** (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
+`npm test` runs **270 unit and component tests in 28 files**. `npm run test:e2e` runs **Playwright** against the production build on desktop and a phone viewport: the whole sample flow, a real-browser **axe** scan (WCAG 2.1 AA, including colour contrast) on every screen, and a no-horizontal-scroll check at 390 px. (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
 
 | Coverage | Statements | Branches | Functions | Lines |
 |---|---|---|---|---|
@@ -204,13 +208,15 @@ What is covered:
 - Dialogs: focus moves in, background is `inert`, Tab wraps both ways, Escape and outside click close, focus returns to the opener; checklist print and text download.
 - Issue previews: the highlighted field for every rule with a preview.
 - UI: issues rendered, language toggle and `html lang`, skip link, screen-reader score descriptions, dialogs, printable checklist, reduced-motion path, ErrorBoundary.
-- Accessibility: axe on every screen with zero violations.
+- Accessibility: axe on every screen with zero violations, in jsdom and in a real Chromium browser (Playwright), where colour contrast is checked too.
+- Advisory rules: pending rules run and are shown, but never change readiness or the scored totals.
 
-CI (`.github/workflows/ci.yml`) runs lint, typecheck, `test:coverage` and build on every push.
+CI (`.github/workflows/ci.yml`) runs lint, typecheck, `test:coverage`, build and the Playwright browser tests on every push.
 
 ```bash
 npm test                # all tests
 npm run test:coverage   # with coverage report
+npm run test:e2e        # Playwright + axe in a real browser (run `npx playwright install chromium` once)
 npm run lint            # ESLint, zero warnings (includes jsx-a11y)
 npm run typecheck
 ```
@@ -277,7 +283,7 @@ The prompt text is not reproduced here. Review the code, not the prompt: everyth
 ## Honest limitations
 
 - **Evidence & verification status:** The OBC income-limit rule is skipped because authoritative sources conflict (₹2.50L official portal vs ₹1.50L MIT notice vs ₹8L Tirpude notice) and remains disabled until reconciled. The SC scheme pack income limit is verified at ₹2,50,000 backed by the official MahaDBT portal and supporting notices. Both scheme packs are confirmed for academic year 2025-26.
-- **Visual document redaction is not implemented:** Text-level 12-digit number masking (`maskAadhaar`, `maskDeep`) is applied across all extracted model outputs, reports, logs, and filenames. However, pre-transmission visual redaction of scanned images or PDFs (such as drawing black bars over card numbers or QR codes) is not implemented; raw scans are sent to Gemini for OCR reading, stripped of image EXIF metadata only.
+- **Visual document redaction is not implemented,** so the upload screen tells the student before they consent: the whole scan, Aadhaar number and QR code included, goes to Gemini, and they can cover the first 8 digits and the QR code first because FormSure needs only the name and date of birth. In detail: Text-level 12-digit number masking (`maskAadhaar`, `maskDeep`) is applied across all extracted model outputs, reports, logs, and filenames. However, pre-transmission visual redaction of scanned images or PDFs (such as drawing black bars over card numbers or QR codes) is not implemented; raw scans are sent to Gemini for OCR reading, stripped of image EXIF metadata only.
 - **Client-side rate limiter is a usability safeguard:** `sessionStorage` timestamps are scoped to a single tab and provide reload persistence within that tab only. Authoritative abuse prevention and quota enforcement relies on provider-side Firebase App Check (reCAPTCHA Enterprise) and Google Cloud project quotas.
 - **The live Gemini path has only been tested with mocks.** The App Check setup is mocked too. No Firebase project or key was used by the automated tests. Check the model name (`gemini-3.8-flash`) and the response schema against your own project before relying on it.
 - Extraction quality depends on scan quality, and transliteration-based name matching is a heuristic: it can pass a near-miss or flag a valid variant.

@@ -11,7 +11,7 @@ function downloadText(report: AuditReport, form: ApplicationForm): void {
     `Applicant: ${form.fullName}`,
     `Readiness: ${report.readiness}%`,
     '',
-    ...report.checks.map((c) => `[${TEXT_MARK[c.status]}] ${c.label}: ${c.detail}`),
+    ...report.checks.map((c) => `[${TEXT_MARK[c.status]}] ${c.label}${c.advisory ? ' (advisory)' : ''}: ${c.detail}`),
     '',
     PRECHECK_DISCLAIMER,
   ];
@@ -47,7 +47,7 @@ export function ChecklistDialog({ report, form, onClose }: ChecklistDialogProps)
             <li key={c.ruleId}>
               <span className="box" aria-hidden="true">{c.status === 'pass' ? '✓' : c.status === 'needs_review' ? '?' : ''}</span>
               <span>
-                <b>{c.label}</b>
+                <b>{c.label}{c.advisory && ' (advisory, not scored)'}</b>
                 <br />
                 <span style={{ color: '#5B6478' }}>
                   {c.status === 'not_evaluated' ? `Not evaluated: ${c.detail}` : c.status === 'needs_review' ? `Couldn’t verify, check manually: ${c.detail}` : c.detail}

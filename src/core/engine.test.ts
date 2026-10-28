@@ -156,24 +156,35 @@ describe('numeric_max evaluator', () => {
 });
 
 describe('the shipped pack applies only rules backed by an official source or a college notice', () => {
-  it('evaluates exactly the two verified rules and skips the rest', () => {
+  it('scores exactly the two verified rules, runs pending rules as advisories and skips conflicting ones', () => {
     const r = shippedAudit(sample.errorDocuments);
-    const byStatus = (s: string) => r.checks.filter((c) => c.status === s).map((c) => c.ruleId);
+    const byStatus = (s: string) => r.checks.filter((c) => c.status === s && !c.advisory).map((c) => c.ruleId);
     expect(byStatus('pass')).toEqual(['right-document']);
     expect(byStatus('fail')).toEqual(['income-ncl']);
-    expect(byStatus('not_evaluated')).toEqual(['required-documents', 'income-financial-year', 'name-match', 'dob-match', 'category-match', 'income-limit']);
+    expect(byStatus('not_evaluated')).toEqual(['required-documents', 'income-financial-year', 'income-limit']);
+    expect(r.checks.filter((c) => c.advisory).map((c) => [c.ruleId, c.status])).toEqual([['name-match', 'fail'], ['dob-match', 'pass'], ['category-match', 'pass']]);
+  });
+  it('an advisory failure is shown but never changes readiness or the scored totals', () => {
+    const r = shippedAudit(sample.errorDocuments);
+    expect(checkOf(r, 'name-match')).toMatchObject({ status: 'fail', advisory: true });
+    expect([r.readiness, r.failed, r.advisories]).toEqual([50, 1, 1]);
+    const conflicting = checkOf(r, 'income-financial-year');
+    expect(conflicting.advisory).toBe(false);
+  });
+  it('a verified rule is never advisory', () => {
+    expect(shippedAudit(sample.errorDocuments).checks.filter((c) => !c.advisory).map((c) => c.ruleId)).toEqual(['required-documents', 'right-document', 'income-financial-year', 'income-ncl', 'income-limit']);
   });
   it('says why: sources conflict, or not verified yet', () => {
     const r = shippedAudit(sample.errorDocuments);
     expect(checkOf(r, 'income-financial-year').detail).toBe('Sources conflict, rule skipped');
     expect(checkOf(r, 'income-limit').detail).toBe('Sources conflict, rule skipped');
-    expect(checkOf(r, 'name-match').detail).toBe('Rule not verified yet, skipped');
+    expect(checkOf(r, 'name-match').detail).toBe('Marksheet says Arav, not Aarav');
   });
   it('sample numbers: 50% with one issue, then 100%', () => {
     const bad = shippedAudit(sample.errorDocuments);
-    expect([bad.passed, bad.failed, bad.needsReview, bad.notEvaluated, bad.readiness]).toEqual([1, 1, 0, 6, 50]);
+    expect([bad.passed, bad.failed, bad.needsReview, bad.notEvaluated, bad.advisories, bad.readiness]).toEqual([1, 1, 0, 3, 1, 50]);
     const good = shippedAudit(fixed);
-    expect([good.passed, good.failed, good.needsReview, good.notEvaluated, good.readiness]).toEqual([2, 0, 0, 6, 100]);
+    expect([good.passed, good.failed, good.needsReview, good.notEvaluated, good.advisories, good.readiness]).toEqual([2, 0, 0, 3, 0, 100]);
   });
   it('a rule marked verified but backed only by secondary sources is still not evaluated', () => {
     const secondaryOnly = { ...allRulesPack, rules: allRulesPack.rules.map((r) => (r.id === 'name-match' ? { ...r, evidence: r.evidence.filter((e) => e.kind === 'secondary') } : r)) };

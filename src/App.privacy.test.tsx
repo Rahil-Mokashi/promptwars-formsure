@@ -37,6 +37,7 @@ describe('consent before live reading', () => {
     await user.upload(screen.getByLabelText(/Aadhaar card/), pdfFile('a.pdf'));
     await screen.findByText('a.pdf');
     const box = screen.getByRole('checkbox', { name: 'Your documents are sent to Google Gemini via Firebase only to read them. Nothing is stored.' });
+    expect(box).toHaveAccessibleDescription(/whole scan is sent, including your Aadhaar number and QR code/);
     expect(box).not.toBeChecked();
     expect(screen.getByRole('button', { name: /run formsure check/i })).toBeDisabled();
     await user.click(box);

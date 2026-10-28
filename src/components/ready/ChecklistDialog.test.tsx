@@ -14,7 +14,8 @@ describe('ChecklistDialog', () => {
     render(<ChecklistDialog report={report} form={sample.form} onClose={() => {}} />);
     expect(screen.getByRole('dialog', { name: /checklist for college desk/i })).toBeInTheDocument();
     expect(screen.getByText(new RegExp(`Readiness ${report.readiness}%`))).toBeInTheDocument();
-    for (const check of report.checks) expect(screen.getByText(check.label)).toBeInTheDocument();
+    for (const check of report.checks) expect(screen.getByText(check.label, { exact: false })).toBeInTheDocument();
+    expect(screen.getAllByText(/advisory, not scored/)).toHaveLength(report.checks.filter((c) => c.advisory).length);
   });
 
   it('prints the checklist', async () => {

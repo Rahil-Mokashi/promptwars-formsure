@@ -49,7 +49,7 @@ function currentScreen(flow: Flow): ReactNode {
         <Audit
           key={flow.runId} pack={flow.pack} report={report} progress={flow.reader.progress} docs={flow.docs}
           fileNames={fileNamesOf(flow)} sample={!!flow.sample} firstName={flow.form.fullName.trim().split(/\s+/)[0] ?? ''}
-          onReport={() => flow.go(report && report.failed === 0 && report.needsReview === 0 ? 'ready' : 'report')}
+          onReport={() => flow.go(report && report.failed === 0 && report.needsReview === 0 && report.advisories === 0 ? 'ready' : 'report')}
         />
       );
     case 'report':
