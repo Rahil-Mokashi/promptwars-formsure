@@ -48,6 +48,7 @@ export function Report({ pack, docs, report, lang, canRecheck, onReupload, onRec
                 <li key={c.ruleId}>
                   <span className="cicon ci-pass" style={{ width: 22, height: 22 }}><Tick size={12} reduce={reduce} /></span>
                   {c.label}
+                  {c.advisory && <span className="ctag">Advisory</span>}
                 </li>
               ))}
             </ul>

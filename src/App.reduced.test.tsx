@@ -24,7 +24,7 @@ describe('reduced-motion sample flow', () => {
     expect(await screen.findByRole('heading', { name: 'Pre-check complete — 1 passed, 1 need fixing, 0 couldn’t be verified.' })).toBeInTheDocument();
     // One scored failure plus two advisory warnings (income certificate year, marksheet name), shown but not scored.
     expect(screen.getAllByRole('article')).toHaveLength(3);
-    expect(screen.getAllByText('Advisory')).toHaveLength(2);
+    expect(screen.getAllByRole('article').filter((a) => a.textContent?.includes('Advisory'))).toHaveLength(2);
     // Count-up is skipped: the final number is there immediately.
     expect(screen.getByText('50%')).toBeInTheDocument();
     expect(screen.getByText(/Not evaluated \(1\)/)).toBeInTheDocument();
@@ -33,6 +33,8 @@ describe('reduced-motion sample flow', () => {
     await user.click(screen.getByRole('button', { name: /re-check/i }));
     expect(await screen.findByRole('heading', { name: 'Pre-check complete' })).toBeInTheDocument();
     expect(screen.getByText('100%')).toBeInTheDocument();
+    expect(screen.getByText(/7 of 8 checks are green/)).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Every check' }).querySelectorAll('li')).toHaveLength(8);
     expect(document.querySelector('.confetti-canvas')).toBeNull(); // no confetti when motion is off
   });
 

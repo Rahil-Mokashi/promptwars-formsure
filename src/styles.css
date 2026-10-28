@@ -1595,3 +1595,10 @@ label.btn:focus-within {
 .skip:focus-visible {
   left: 12px;
 }
+
+/* Ready screen: every check with its tick, left-aligned inside the centred card. */
+.readylist {
+  max-width: 440px;
+  margin: 22px auto 0;
+  text-align: left;
+}
