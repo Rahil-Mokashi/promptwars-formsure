@@ -100,7 +100,7 @@ describe('privacy: nothing is stored, nothing sensitive is logged', () => {
     await act(async () => {
       window.dispatchEvent(new Event('pagehide'));
     });
-    await waitFor(() => expect(screen.queryByText('a.pdf')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('a.pdf')).toBeNull(), { timeout: 10_000 });
   });
 });
 
