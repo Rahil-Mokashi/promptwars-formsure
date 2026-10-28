@@ -11,7 +11,12 @@ interface FirebaseEnv {
   VITE_FIREBASE_STORAGE_BUCKET?: string;
   VITE_FIREBASE_MESSAGING_SENDER_ID?: string;
   VITE_GEMINI_MODEL?: string;
+  VITE_RECAPTCHA_SITE_KEY?: string;
+  DEV?: boolean;
 }
+
+// initializeAppCheck throws if it runs twice for the same app, so remember which apps have it.
+const appCheckStarted = new WeakSet<object>();
 
 /** Firebase web config from VITE_FIREBASE_* variables, or null when it is missing. */
 export function firebaseConfig(env: FirebaseEnv = import.meta.env as FirebaseEnv) {
@@ -42,6 +47,15 @@ export function createFirebaseGenerate(env: FirebaseEnv = import.meta.env as Fir
       import('firebase/ai'),
     ]);
     const app = getApps()[0] ?? initializeApp(config);
+    // App Check (reCAPTCHA Enterprise) must be set up before AI Logic so every request carries a token.
+    const siteKey = env.VITE_RECAPTCHA_SITE_KEY;
+    if (siteKey && !appCheckStarted.has(app)) {
+      const { initializeAppCheck, ReCaptchaEnterpriseProvider } = await import('firebase/app-check');
+      // Dev only: lets localhost get a token; register the debug token printed in the console.
+      if (env.DEV) (self as { FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean | string }).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+      initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(siteKey), isTokenAutoRefreshEnabled: true });
+      appCheckStarted.add(app);
+    }
     const str = () => Schema.string({ nullable: true });
     const model = getGenerativeModel(
       getAI(app, { backend: new GoogleAIBackend() }),

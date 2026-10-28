@@ -12,6 +12,10 @@ const mocks = vi.hoisted(() => {
     initializeApp: vi.fn((config: unknown) => ({ config })),
     getApps: vi.fn((): unknown[] => []),
     getAI: vi.fn<(...args: unknown[]) => object>(() => ({})),
+    initializeAppCheck: vi.fn<(...args: unknown[]) => object>(() => ({})),
+    ReCaptchaEnterpriseProvider: class {
+      constructor(readonly siteKey: string) {}
+    },
     Schema: {
       object: kind('object'), string: kind('string'), array: kind('array'),
       number: kind('number'), integer: kind('integer'), boolean: kind('boolean'),
@@ -20,6 +24,10 @@ const mocks = vi.hoisted(() => {
 });
 
 vi.mock('firebase/app', () => ({ initializeApp: mocks.initializeApp, getApps: mocks.getApps }));
+vi.mock('firebase/app-check', () => ({
+  initializeAppCheck: mocks.initializeAppCheck,
+  ReCaptchaEnterpriseProvider: mocks.ReCaptchaEnterpriseProvider,
+}));
 vi.mock('firebase/ai', () => ({
   getAI: mocks.getAI,
   getGenerativeModel: mocks.getGenerativeModel,
@@ -62,5 +70,52 @@ describe('createFirebaseGenerate (Firebase AI mocked)', () => {
     await createFirebaseGenerate({ ...env, VITE_GEMINI_MODEL: 'gemini-custom' })!({ mimeType: 'image/png', data: 'x', prompt: 'p' });
     expect(mocks.initializeApp).not.toHaveBeenCalled();
     expect((mocks.getGenerativeModel.mock.calls[0]?.[1] as { model: string }).model).toBe('gemini-custom');
+  });
+});
+
+describe("App Check (reCAPTCHA Enterprise, mocked)", () => {
+  const read = { mimeType: "image/png", data: "x", prompt: "p" };
+  const debugToken = () => (self as { FIREBASE_APPCHECK_DEBUG_TOKEN?: unknown }).FIREBASE_APPCHECK_DEBUG_TOKEN;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete (self as { FIREBASE_APPCHECK_DEBUG_TOKEN?: unknown }).FIREBASE_APPCHECK_DEBUG_TOKEN;
+  });
+
+  it("initialises App Check with the reCAPTCHA Enterprise provider before getAI", async () => {
+    const { createFirebaseGenerate } = await import("./live");
+    await createFirebaseGenerate({ ...env, VITE_RECAPTCHA_SITE_KEY: "site-key" })!(read);
+
+    const [app, options] = mocks.initializeAppCheck.mock.calls[0] as [unknown, { provider: { siteKey: string }; isTokenAutoRefreshEnabled: boolean }];
+    expect(app).toEqual(expect.objectContaining({ config: expect.anything() }));
+    expect(options.provider).toBeInstanceOf(mocks.ReCaptchaEnterpriseProvider);
+    expect(options.provider.siteKey).toBe("site-key");
+    expect(options.isTokenAutoRefreshEnabled).toBe(true);
+    expect(mocks.initializeAppCheck.mock.invocationCallOrder[0]).toBeLessThan(mocks.getAI.mock.invocationCallOrder[0] as number);
+    expect(debugToken()).toBeUndefined(); // not a dev build
+  });
+
+  it("is skipped when the site key is missing", async () => {
+    const { createFirebaseGenerate } = await import("./live");
+    await createFirebaseGenerate(env)!(read);
+    expect(mocks.initializeAppCheck).not.toHaveBeenCalled();
+    expect(mocks.getAI).toHaveBeenCalled();
+  });
+
+  it("enables the debug token in dev only", async () => {
+    const { createFirebaseGenerate } = await import("./live");
+    await createFirebaseGenerate({ ...env, VITE_RECAPTCHA_SITE_KEY: "k", DEV: true })!(read);
+    expect(debugToken()).toBe(true);
+  });
+
+  it("initialises App Check once per app", async () => {
+    const existing = { name: "existing-app" };
+    mocks.getApps.mockReturnValue([existing]);
+    const { createFirebaseGenerate } = await import("./live");
+    const generate = createFirebaseGenerate({ ...env, VITE_RECAPTCHA_SITE_KEY: "k" })!;
+    await generate(read);
+    await generate(read);
+    expect(mocks.initializeAppCheck).toHaveBeenCalledTimes(1);
+    mocks.getApps.mockReturnValue([]);
   });
 });

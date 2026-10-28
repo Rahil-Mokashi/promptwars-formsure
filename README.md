@@ -149,9 +149,10 @@ Details in [SECURITY.md](SECURITY.md).
 
 - **No storage.** There is no backend and no database. Files are read in memory, sent once to Gemini through Firebase AI Logic, and dropped when the page closes.
 - **Aadhaar masking.** Any 12-digit number in model output or in the report is rewritten to `XXXX XXXX 1234` before it is displayed or printed.
+- **App Check with reCAPTCHA Enterprise protects the Gemini quota.** The app initialises App Check before Firebase AI Logic, so each Gemini request carries a token that only this site can obtain (set `VITE_RECAPTCHA_SITE_KEY`, register the site key and the web app in the Firebase console, and enforce App Check for AI Logic). In dev it uses an App Check debug token printed in the browser console, which you register once in the console.
 - **File validation** in the browser: png / jpg / webp / pdf only, 1 byte to 5 MB, before anything is sent.
 - **Zod on AI output.** Invalid output is retried once, then rejected with a friendly message.
-- **CSP and headers** from Firebase Hosting: `script-src 'self'`, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy: no-referrer`; connections limited to `*.googleapis.com`.
+- **CSP and headers** from Firebase Hosting: `script-src 'self'` plus Google's reCAPTCHA scripts (`www.google.com`, `www.gstatic.com`), `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy: no-referrer`; connections limited to `*.googleapis.com` and `www.google.com`; reCAPTCHA frames from Google only.
 - **No secrets in the repo.** `.env` is git-ignored; `VITE_FIREBASE_*` are public web identifiers.
 - Only **fictional** sample data is included.
 
@@ -171,7 +172,7 @@ Not done: a full screen-reader pass with NVDA / VoiceOver. axe catches structura
 
 ## Testing
 
-`npm test` runs **72 tests in 12 files** (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
+`npm test` runs **76 tests in 12 files** (Vitest, jsdom, Testing Library, vitest-axe). `npm run test:coverage` adds coverage with a threshold on `src/core`.
 
 | Coverage | Statements | Branches | Functions | Lines |
 |---|---|---|---|---|
@@ -204,10 +205,10 @@ Vendor code is split so no chunk exceeds 500 KB (largest: 211 KB). The Firebase 
 | `react` | 210.5 KB | 65.7 KB | on start |
 | `framer-motion` | 161.3 KB | 54.2 KB | on start |
 | app (`index`) | 157.1 KB | 46.0 KB | on start |
-| `firebase` (app + AI Logic) | 80.9 KB | 24.3 KB | lazy, live upload only |
+| `firebase` (app + AI Logic + App Check) | 95.2 KB | 29.1 KB | lazy, live upload only |
 | CSS | 17.9 KB | 4.5 KB | on start |
 
-Initial JavaScript is about 529 KB raw / 166 KB gzip. I have not run Lighthouse or measured real-device load times.
+Initial JavaScript is about 530 KB raw / 166 KB gzip. I have not run Lighthouse or measured real-device load times.
 
 ## Run and deploy
 
@@ -220,10 +221,11 @@ npm run dev                  # Vite dev server on http://localhost:5173
 npm run build && npm start   # production build preview
 ```
 
-Live reading needs a Firebase project with **Firebase AI Logic** enabled (Gemini Developer API provider) and a registered web app. Copy its config into `.env` **before building**, because `VITE_*` values are compiled into the bundle:
+Live reading needs a Firebase project with **Firebase AI Logic** enabled (Gemini Developer API provider), a registered web app, and **App Check** (reCAPTCHA Enterprise) enforced for AI Logic. Copy its config into `.env` **before building**, because `VITE_*` values are compiled into the bundle:
 
 ```
 VITE_FIREBASE_API_KEY=  VITE_FIREBASE_AUTH_DOMAIN=  VITE_FIREBASE_PROJECT_ID=  VITE_FIREBASE_APP_ID=
+VITE_RECAPTCHA_SITE_KEY=   # reCAPTCHA Enterprise site key for App Check
 VITE_GEMINI_MODEL=gemini-3.8-flash
 ```
 
@@ -257,8 +259,7 @@ The prompt text is not reproduced here. Review the code, not the prompt: everyth
 
 - **Rules are not verified against the official scheme document.** They come from college notices and community guides, and each links to its source so a person can verify it.
 - **The income-limit rule is skipped** as unverified because sources conflict. Its limit in the pack is a placeholder that is never applied.
-- **The live Gemini path has only been tested with mocks.** No Firebase project or key was used by the automated tests. Check the model name (`gemini-3.8-flash`) and the response schema against your own project before relying on it.
-- **App Check is not enabled yet; in production it would protect the Gemini quota.** Until then, anyone with the site URL can spend the project's Gemini quota. Restrict the Firebase API key by HTTP referrer and set budget alerts.
+- **The live Gemini path has only been tested with mocks.** The App Check setup is mocked too. No Firebase project or key was used by the automated tests. Check the model name (`gemini-3.8-flash`) and the response schema against your own project before relying on it.
 - Extraction quality depends on scan quality, and transliteration-based name matching is a heuristic: it can pass a near-miss or flag a valid variant.
 - Documents are sent to Google's Gemini API for reading. "Nothing is stored" describes FormSure, not Google's own data handling for your project.
 - The UI loads one scheme pack; the other scheme cards are "coming soon".
@@ -269,6 +270,6 @@ The prompt text is not reproduced here. Review the code, not the prompt: everyth
 
 - **More scheme packs** (VJNT, Freeship, other states), with a pack selector and an AI-assisted pack builder where a person verifies every drafted rule against the official source.
 - **Verify the rules** against the official scheme documents and resolve the income-limit conflict, then enable rule 8.
-- **App Check** (reCAPTCHA) on Firebase AI Logic, plus per-user rate limits.
+- Per-user rate limits on top of App Check, and App Check replay protection.
 - **College desk dashboard** to review many students' checklists (with explicit consent and a real privacy design).
 - Screen-reader testing, offline support for the sample, and more languages.
