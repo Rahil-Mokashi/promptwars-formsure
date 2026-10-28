@@ -32,7 +32,7 @@ export function Ring({ pct }: { pct: number }) {
           transition={{ duration: reduce ? 0 : 1.3, ease: EASE }}
         />
       </svg>
-      <div className="ringnum" aria-hidden="true">
+      <div className="ringnum" aria-hidden="true" style={full ? { fontSize: 38 } : undefined}>
         <div>
           {count}%<small>Ready</small>
         </div>
